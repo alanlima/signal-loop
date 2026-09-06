@@ -37,7 +37,7 @@ class ShellTests(TestCase):
                 self.assertNotContains(response, "Manager reports")
 
     def test_placeholders_resolve_and_preserve_navigation(self):
-        for route, text in (("check-in", "Check-in coming soon"), ("team-reports", "No team reports yet"),
+        for route, text in (("check-in", "Check-in unavailable"), ("team-reports", "No team reports yet"),
                             ("manager-reports", "No manager reports yet")):
             response = self.client.get(f"/app/{route}/?project={self.birch.pk}")
             self.assertContains(response, text)

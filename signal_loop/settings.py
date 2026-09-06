@@ -133,6 +133,7 @@ INSTALLED_APPS = [
     "signal_loop.windows",
     "signal_loop.admission",
     "signal_loop.feedback",
+    "signal_loop.checkins",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

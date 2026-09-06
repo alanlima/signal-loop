@@ -15,7 +15,7 @@ DESTINATIONS = (
 )
 
 
-def render_shell(request, destination="application_entry"):
+def render_shell(request, destination="application_entry", *, extra_context=None):
     candidates = Project.objects.filter(
         memberships__organisation_membership__user=request.user,
     ).select_related("organisation").distinct().order_by("name", "pk")
@@ -49,6 +49,7 @@ def render_shell(request, destination="application_entry"):
                    and request.headers.get("HX-History-Restore-Request") != "true")
     context = {"projects": projects, "selected_project": selected, "navigation": navigation,
                "page_title": title, "destination": destination, "is_fragment": is_fragment}
+    context.update(extra_context or {})
     template = "accounts/shell_panel.html" if is_fragment else "accounts/entry.html"
     response = render(request, template, context)
     patch_vary_headers(response, ["HX-Request", "HX-History-Restore-Request"])

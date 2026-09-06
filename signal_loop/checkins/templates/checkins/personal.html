@@ -1,0 +1,44 @@
+{% if stage == 'unavailable' %}
+<div class="empty-state"><h2>Check-in unavailable</h2><p>Verified participation is not configured for this account. No reflection has been collected.</p></div>
+{% elif stage == 'empty' %}
+<div class="empty-state"><p>No projects are available for this week's check-in</p></div>
+{% elif stage == 'expired' %}
+<div class="empty-state"><h2>This draft is no longer available</h2><p>It was discarded or expired. Its reflection cannot be recovered. You can start a new journey next Monday at 00:00 UTC, if projects are available.</p></div>
+{% elif stage == 'complete' %}
+<div class="empty-state"><h2>This week's check-in is complete</h2><p>No new answers have been submitted.</p></div>
+{% elif stage == 'select' %}
+<h2>Choose your projects</h2><p>One combined journey this UTC week, with up to three projects across your organisations.</p>
+{% if message %}<p role="alert">{{ message }}</p>{% endif %}
+<form method="post" class="personal-form" data-week-end="{{ week_end|date:'c' }}">{% csrf_token %}
+  <fieldset><legend>Select one to three projects</legend>
+  {% for candidate in candidates %}<label class="check-choice"><input type="checkbox" name="projects" value="{{ candidate.project_id }}" data-closes-at="{{ candidate.closes_at|date:'c' }}"{% if candidate.project_id in chosen %} checked{% endif %}> {{ candidate.project_name }}</label>{% endfor %}
+  </fieldset>
+  <p>Draft expiry: <span data-draft-expiry aria-live="polite">{% if earliest_expiry %}{{ earliest_expiry|date:"Y-m-d H:i:s" }} UTC{% else %}Choose projects to see your exact expiry.{% endif %}</span> Removing a project after Begin cannot extend this.</p>
+  <p>Submitting, discarding or reaching expiry ends this week's journey.</p>
+  <button type="submit" name="action" value="begin">Begin personal reflection</button>
+</form>
+{% else %}
+{% if draft.expires_at %}<p class="eyebrow">Draft expires {{ draft.expires_at|date:"Y-m-d H:i:s" }} UTC</p>{% else %}<p>Expiry could not be checked. Keep this page open and retry.</p>{% endif %}
+{% if stage == 'projects' %}
+<div class="empty-state"><h2>Personal reflection saved</h2><p>Project questions are not available yet. No feedback has been submitted.</p></div>
+<form method="post">{% csrf_token %}<button class="secondary" name="action" value="back">Back to personal reflection</button></form>
+{% else %}
+<h2>Personal reflection</h2>
+<p>Your personal reflection stays in this draft and is discarded when you submit. Only your selected project answers can contribute to anonymous project summaries.</p>
+<p>Your reflection is not monitored, delivered to a manager or an emergency/support-request channel.</p>
+{% if saved %}<p role="status">Your answers are saved. You can return before the expiry shown above.</p>{% endif %}
+{% if message %}<p role="alert">{{ message }}</p>{% endif %}
+{% if form.errors %}<div role="alert"><p>Review the errors below. Your entered answers are preserved.</p>{{ form.non_field_errors }}</div>{% endif %}
+<form method="post" class="personal-form" novalidate>{% csrf_token %}
+  <input type="hidden" name="revision" value="{{ draft.revision }}">
+  {% for field in form %}<div class="form-field">
+    <label for="{{ field.id_for_label }}">{{ field.label }} <span class="field-kind">({% if field.field.required %}Required{% else %}Optional{% endif %})</span></label>
+    {{ field }}
+    {% if field.help_text %}<p class="help-text" id="{{ field.auto_id }}_helptext">{{ field.help_text }} <span data-count-for="{{ field.id_for_label }}" aria-live="polite"></span></p>{% endif %}
+    {% if field.errors %}<div id="{{ field.auto_id }}_error" role="alert">{{ field.errors }}</div>{% endif %}
+  </div>{% endfor %}
+  <div class="form-actions"><button name="action" value="next">Next</button><button class="secondary" name="action" value="save">Save and stay</button></div>
+</form>
+{% endif %}
+<form method="post" class="discard-form">{% csrf_token %}<label class="check-choice"><input type="checkbox" name="confirm" value="yes"> Delete my draft and end this week's journey</label><button class="secondary" name="action" value="discard">Discard draft</button></form>
+{% endif %}
