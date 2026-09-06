@@ -127,6 +127,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_htmx",
     "signal_loop.accounts",
     "signal_loop.membership",
 ]

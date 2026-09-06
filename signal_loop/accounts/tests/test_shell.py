@@ -74,11 +74,22 @@ class ShellTests(TestCase):
         self.assertNotContains(response, '<html')
         self.assertIn("HX-Request", response.headers["Vary"])
         self.assertIn("no-store", response.headers["Cache-Control"])
+        self.assertContains(response, '<title>Team reports | SignalLoop</title>')
+        self.assertContains(response, 'hx-history="false"')
+
+    def test_htmx_history_restoration_returns_complete_document(self):
+        response = self.client.get(f"/app/team-reports/?project={self.cedar.pk}",
+                                   HTTP_HX_REQUEST="true", HTTP_HX_HISTORY_RESTORE_REQUEST="true")
+        self.assertContains(response, '<html lang="en">')
+        self.assertContains(response, 'No team reports yet')
+        self.assertContains(response, 'django_htmx/htmx-2.min.js')
+        self.assertIn("HX-History-Restore-Request", response.headers["Vary"])
 
     def test_shared_accessible_regions_and_login_required(self):
         response = self.client.get("/app/")
         for snippet in ('Skip to content', 'aria-label="Project navigation"', 'label for="project"',
-                        'role="status"', 'role="alert"', 'accounts/shell.css'):
+                        'role="status"', 'role="alert"', 'accounts/shell.css',
+                        'django_htmx/htmx-2.min.js', 'accounts/shell.js'):
             self.assertContains(response, snippet)
         self.client.logout()
         self.assertEqual(self.client.get("/app/team-reports/").status_code, 302)

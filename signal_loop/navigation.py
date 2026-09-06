@@ -45,10 +45,12 @@ def render_shell(request, destination="application_entry"):
         if permitted:
             navigation.append({"url": f"{reverse(name)}?project={selected.pk}",
                                "label": label, "current": name == destination})
+    is_fragment = (request.headers.get("HX-Request") == "true"
+                   and request.headers.get("HX-History-Restore-Request") != "true")
     context = {"projects": projects, "selected_project": selected, "navigation": navigation,
-               "page_title": title, "destination": destination}
-    template = "accounts/shell_panel.html" if request.headers.get("HX-Request") == "true" else "accounts/entry.html"
+               "page_title": title, "destination": destination, "is_fragment": is_fragment}
+    template = "accounts/shell_panel.html" if is_fragment else "accounts/entry.html"
     response = render(request, template, context)
-    patch_vary_headers(response, ["HX-Request"])
+    patch_vary_headers(response, ["HX-Request", "HX-History-Restore-Request"])
     response["Cache-Control"] = "private, no-store"
     return response

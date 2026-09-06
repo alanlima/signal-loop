@@ -1,4 +1,5 @@
-<div id="application-shell">
+{% if is_fragment %}<title>{{ page_title }} | SignalLoop</title>{% endif %}
+<div id="application-shell" hx-history="false">
   <div class="toolbar">
     {% if projects %}
     <form method="get" action="{% url 'application_entry' %}" class="project-picker"
