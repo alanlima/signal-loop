@@ -1,15 +1,13 @@
-<!doctype html>
-<html lang="en">
-  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Sign in | SignalLoop</title></head>
-  <body>
-    <main>
-      <h1>Sign in to SignalLoop</h1>
-      <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <input type="hidden" name="next" value="{{ next }}">
-        <button type="submit">Sign in</button>
-      </form>
-    </main>
-  </body>
-</html>
+{% extends "accounts/base.html" %}
+{% block content %}
+<main id="main-content" class="login" tabindex="-1">
+  <h1>Sign in to SignalLoop</h1>
+  <div role="status" aria-live="polite"></div>
+  {% if form.errors %}<div role="alert" aria-live="assertive"><p>Sign-in failed. Check the details below.</p></div>{% endif %}
+  <form method="post">
+    {% csrf_token %}{{ form.as_p }}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit">Sign in</button>
+  </form>
+</main>
+{% endblock %}

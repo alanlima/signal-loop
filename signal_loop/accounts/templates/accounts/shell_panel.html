@@ -1,0 +1,38 @@
+{% if is_fragment %}<title>{{ page_title }} | SignalLoop</title>{% endif %}
+<div id="application-shell" hx-history="false">
+  <div class="toolbar">
+    {% if projects %}
+    <form method="get" action="{% url 'application_entry' %}" class="project-picker"
+          hx-get="{% url 'application_entry' %}" hx-target="#application-shell" hx-swap="outerHTML" hx-push-url="true">
+      <label for="project">Project</label>
+      <select id="project" name="project">
+        {% for project in projects %}<option value="{{ project.pk }}"{% if project.pk == selected_project.pk %} selected{% endif %}>{{ project.name }}</option>{% endfor %}
+      </select>
+      <button type="submit">Switch project</button>
+    </form>
+    {% endif %}
+    <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="secondary" type="submit">Sign out</button></form>
+  </div>
+  {% if navigation %}
+  <nav aria-label="Project navigation">
+    {% for item in navigation %}<a href="{{ item.url }}" hx-get="{{ item.url }}" hx-target="#application-shell" hx-swap="outerHTML" hx-push-url="true"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}</a>{% endfor %}
+  </nav>
+  {% endif %}
+  <main id="main-content" tabindex="-1">
+    <h1>{{ page_title }}</h1>
+    <div id="status-message" role="status" aria-live="polite"></div>
+    <div id="form-errors" role="alert" aria-live="assertive"></div>
+    {% if not projects %}
+      <div class="empty-state"><h2>No projects yet</h2><p>You are signed in. Ask your organisation administrator to add you to a project.</p></div>
+    {% elif destination == 'application_entry' %}
+      <p class="eyebrow">{{ selected_project.name }}</p>
+      <div class="empty-state"><h2>Your weekly workspace</h2><p>You are signed in. Choose Current check-in or Team reports to see what is available for this project.</p></div>
+    {% elif destination == 'current_check_in' %}
+      <div class="empty-state"><h2>Check-in coming soon</h2><p>The weekly check-in is not available yet.</p></div>
+    {% elif destination == 'team_reports' %}
+      <div class="empty-state"><h2>No team reports yet</h2><p>Published team summaries will appear here when reporting is available.</p></div>
+    {% elif destination == 'manager_reports' %}
+      <div class="empty-state"><h2>No manager reports yet</h2><p>Manager reports will appear here when reporting is available.</p></div>
+    {% endif %}
+  </main>
+</div>

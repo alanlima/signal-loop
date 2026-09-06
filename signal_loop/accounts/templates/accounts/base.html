@@ -1,0 +1,18 @@
+{% load static django_htmx %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page_title|default:"Sign in" }} | SignalLoop</title>
+    <link rel="stylesheet" href="{% static 'accounts/shell.css' %}">
+    <meta name="htmx-config" content='{"historyRestoreAsHxRequest":false}'>
+    {% htmx_script %}
+    <script src="{% static 'accounts/shell.js' %}" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="brand">SignalLoop <span>Weekly team feedback</span></header>
+    {% block content %}{% endblock %}
+  </body>
+</html>
