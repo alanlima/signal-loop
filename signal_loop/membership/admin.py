@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core.exceptions import PermissionDenied
+from django.http import HttpResponse
 
 from signal_loop.authorization.permissions import Permission, has_permission
 from .models import Organisation, OrganisationMembership, Project, ProjectMembership, Role
@@ -33,12 +34,18 @@ class OrganisationAdminSite(admin.AdminSite):
     def has_permission(self, request):
         return bool(administered_organisations(request.user))
 
+    def get_log_entries(self, request):
+        # Native logs have no reliable current organisation scope, particularly
+        # for shared user records and privileges revoked after an action.
+        return super().get_log_entries(request).none()
+
 
 site = OrganisationAdminSite(name="organisation_admin")
 
 
 class ScopedAdmin(admin.ModelAdmin):
     actions = None
+    change_form_template = "membership/admin_change_form.html"
     list_display = ("__str__", "is_active")
     organisation_lookup = "organisation_id"
 
@@ -66,6 +73,15 @@ class ScopedAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+    def history_view(self, request, object_id, extra_context=None):
+        # Per-object history can expose actors/changes from another organisation
+        # through shared accounts. Keep audit records outside ordinary admin UI.
+        return HttpResponse("Not found.", status=404, content_type="text/plain")
+
+    def message_user(self, request, message, level="info", extra_tags="", fail_silently=False):
+        # A queued success message may be consumed only after scope is revoked.
+        super().message_user(request, "Administration request completed.", level, extra_tags, fail_silently)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         scope = administered_organisations(request.user)

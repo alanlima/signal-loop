@@ -181,3 +181,40 @@ class OrganisationAdminTests(TestCase):
         for registered in site._registry.values():
             self.assertFalse(registered.actions)
             self.assertFalse(registered.search_fields)
+
+    def test_revoked_organisation_actions_do_not_leak_on_index(self):
+        authority = OrganisationMembership.objects.create(
+            organisation=self.other, user=self.admin, role=Role.MANAGER,
+        )
+        secret_name = "REVOKED_ORGANISATION_PROJECT"
+        response = self.client.post(self.url("project", "add"), {
+            "organisation": self.other.pk, "name": secret_name, "is_active": "on", "_save": "Save",
+        })
+        self.assertEqual(response.status_code, 302)
+        project = Project.objects.get(name=secret_name)
+        authority.is_active = False
+        authority.save()
+        # Do not consume success messages before revocation: those must be safe too.
+        for target in ("/admin/", self.url("project", "changelist")):
+            response = self.client.get(target)
+            self.assertNotContains(response, secret_name)
+            self.assertNotContains(response, self.url("project", "change", project.pk))
+        response = self.client.get(self.url("project", "history", project.pk))
+        self.assertEqual((response.status_code, response.content), (404, b"Not found."))
+
+    def test_shared_user_history_is_not_an_audit_data_backdoor(self):
+        from django.contrib.admin.models import CHANGE, LogEntry
+        from django.contrib.contenttypes.models import ContentType
+
+        LogEntry.objects.create(
+            user=self.foreign_user,
+            content_type=ContentType.objects.get_for_model(self.member),
+            object_id=str(self.member.pk), object_repr="HIDDEN_SHARED_ACCOUNT_HISTORY",
+            action_flag=CHANGE, change_message="HIDDEN_FOREIGN_ORGANISATION_CHANGE",
+        )
+        self.assertEqual(self.client.get(self.url("user", "change", self.member.pk)).status_code, 200)
+        response = self.client.get(self.url("user", "history", self.member.pk))
+        self.assertEqual((response.status_code, response.content), (404, b"Not found."))
+        response = self.client.get("/admin/")
+        self.assertNotContains(response, "HIDDEN_SHARED_ACCOUNT_HISTORY")
+        self.assertNotContains(response, "HIDDEN_FOREIGN_ORGANISATION_CHANGE")
