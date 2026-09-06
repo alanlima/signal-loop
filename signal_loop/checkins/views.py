@@ -12,7 +12,9 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods
 
 from signal_loop.admission.models import Journey, Participation, Principal
-from signal_loop.admission.services import AdmissionError, VerifiedPrincipal, discard, global_week, issue, own_status
+from signal_loop.admission.services import (
+    AdmissionError, VerifiedPrincipal, discard, global_week, issue, own_status, reconcile_expired_journeys,
+)
 from signal_loop.membership.models import Organisation
 from signal_loop.navigation import render_shell
 from signal_loop.windows.services import eligible_projects
@@ -90,7 +92,9 @@ def _personal_check_in(request):
         return render_shell(request, "current_check_in", extra_context=context)
     if identifier is None:
         return render_shell(request, "current_check_in", extra_context=context)
-    removed, _ = PersonalDraft.objects.filter(journey__principal_id=identifier, expires_at__lte=at).delete()
+    with transaction.atomic():
+        reconcile_expired_journeys(user=request.user, organisation=organisation, provider=provider, clock=lambda: at)
+        removed, _ = PersonalDraft.objects.filter(journey__principal_id=identifier, expires_at__lte=at).delete()
     if removed:
         context["message"] = "An earlier draft expired and was deleted. Its reflection cannot be recovered."
     week, end = cycle

@@ -6,7 +6,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 
-from signal_loop.admission.models import Journey, Participation
+from signal_loop.admission.models import Credential, Journey, Participation
 from signal_loop.admission.services import VerifiedPrincipal
 from signal_loop.checkins.forms import PersonalForm
 from signal_loop.checkins.models import PersonalDraft
@@ -209,3 +209,7 @@ class PersonalTests(TestCase):
             response = self.client.get("/app/check-in/")
         self.assertNotContains(response, "old private reflection")
         self.assertFalse(PersonalDraft.objects.exists())
+        old = Journey.objects.get()
+        self.assertEqual(old.state, Journey.State.EXPIRED)
+        self.assertEqual((old.selected_scopes, old.started_at, old.expires_at), ([], None, None))
+        self.assertFalse(Credential.objects.filter(active=True).exists())

@@ -35,8 +35,11 @@ Back returns to personal reflection. #17/#20/#21 own later question/timer/submis
 integration. No final feedback is written or credential consumed in this issue.
 
 Expiry is the earliest selected local close/global UTC week-end/seven-day cap,
-frozen at Begin. Reads and writes deny expired drafts; access removes the person's
-expired drafts even across a new global week. Expired content is never reconstructed.
+frozen at Begin. Reads and writes deny expired drafts; access atomically reconciles
+all of the person's expired admission journeys and removes expired private drafts,
+even across a new global week. Reconciliation seals the old slots, clears their
+transient selection/start/expiry and cancels old credentials without cancelling a
+new week's rotated credential. Expired content is never reconstructed.
 Discard needs explicit confirmation, deletes the private row and seals the global
 week. On a later UTC week a new eligible journey may start without old answers.
 #38 still owns scheduled deletion at deadlines and replica/cache/backup enforcement;
