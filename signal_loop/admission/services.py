@@ -14,6 +14,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 
+from signal_loop.contracts.feedback import InvalidFeedback, is_substantive, normalize_sections
 from signal_loop.membership.models import Organisation, OrganisationMembership, Project, ProjectMembership
 from signal_loop.windows.models import WeeklyWindow
 from signal_loop.windows.services import eligible_projects
@@ -184,41 +185,10 @@ def issue(*, user, scopes, provider=deny_unverified, clock=timezone.now):
 
 
 def _anonymous_sections(sections):
-    """Narrow anonymous transport shape; #15/#20 own full validated payload construction."""
-    if not isinstance(sections, (list, tuple)) or not 1 <= len(sections) <= 3:
-        raise AdmissionError("invalid_submission")
-    result = []
-    for section in sections:
-        if not isinstance(section, dict) or set(section) != {"project", "week", "answers"}:
-            raise AdmissionError("invalid_submission")
-        answers = section["answers"]
-        if (type(section["project"]) is not int or not isinstance(section["week"], str)
-                or not isinstance(answers, dict) or not answers or
-                not set(answers) <= {"J1", "J2", "J3", "F1", "F2"} or
-                any(not isinstance(value, str) for value in answers.values())):
-            raise AdmissionError("invalid_submission")
-        answers = {key: value.replace("\r\n", "\n").replace("\r", "\n") for key, value in answers.items()}
-        if (answers.get("J1") not in {"on_track", "at_risk", "blocked", "not_enough_context", "prefer_not_to_say"}
-                or answers.get("J2") not in {"manageable", "stretched", "overloaded", "not_enough_context", "prefer_not_to_say"}
-                or len(answers.get("J3", "")) > 320 or any(len(answers.get(key, "")) > 240 for key in ("F1", "F2"))
-                or {"F1", "F2"} <= answers.keys()
-                or ("F1" in answers and answers["J1"] not in {"at_risk", "blocked"})
-                or ("F2" in answers and answers["J2"] not in {"stretched", "overloaded"})):
-            raise AdmissionError("invalid_submission")
-        result.append({"project": section["project"], "week": section["week"],
-                       "schema": "project-feedback/1.0", "privacy_policy": "1.0", "answers": dict(answers)})
-    if len({s["project"] for s in result}) != len(result):
-        raise AdmissionError("invalid_submission")
-    if sum("F1" in s["answers"] or "F2" in s["answers"] for s in result) > 2:
-        raise AdmissionError("invalid_submission")
-    return result
-
-
-def _substantive(section):
-    answers = section["answers"]
-    return (answers["J1"] not in {"not_enough_context", "prefer_not_to_say"}
-            or answers["J2"] not in {"not_enough_context", "prefer_not_to_say"}
-            or any(answers.get(key, "").strip() for key in ("J3", "F1", "F2")))
+    try:
+        return normalize_sections(sections)
+    except InvalidFeedback:
+        raise AdmissionError("invalid_submission") from None
 
 
 def redeem(*, user, week, claims, sections, sink, provider=deny_unverified,
@@ -267,7 +237,7 @@ def redeem(*, user, week, claims, sections, sink, provider=deny_unverified,
             admitted_at = _now(clock)
             if admitted_at >= journey.expires_at or any(admitted_at >= w.closes_at for w in windows):
                 raise AdmissionError()
-            anonymous = [section for section in anonymous if _substantive(section)]
+            anonymous = [section for section in anonymous if is_substantive(section)]
             if not anonymous:
                 return "no_feedback"
             submitted_projects = {section["project"] for section in anonymous}

@@ -1,10 +1,12 @@
 """Trusted admission boundary; callers supply the authenticated user, never a URL user ID."""
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 
 from django.core.exceptions import ValidationError
 from django.db.models import QuerySet
 from django.utils import timezone
+
+from signal_loop.membership.models import Project
 
 from .models import EligibilitySnapshot, WeeklyWindow
 
@@ -15,6 +17,25 @@ class EligibleProject:
     project_id: int
     project_name: str
     role_at_open: str
+
+
+@dataclass(frozen=True)
+class ProjectWeekScope:
+    project_id: int
+    week: date
+    opens_at: datetime
+    closes_at: datetime
+
+
+def project_week_scope(*, project_id, week):
+    """Public schedule facts only; no participant, eligibility or admission data."""
+    organisation_id = Project.objects.filter(pk=project_id).values_list("organisation_id", flat=True).first()
+    if organisation_id is None:
+        return None
+    window = WeeklyWindow.objects.filter(organisation_id=organisation_id, week_start=week).first()
+    if window is None:
+        return None
+    return ProjectWeekScope(project_id, window.week_start, window.opens_at, window.closes_at)
 
 
 def create_weekly_window(*, organisation, week_start, timezone_name):
