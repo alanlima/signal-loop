@@ -160,4 +160,3 @@ Residual inference remains after these controls. Communicate these limits before
 ## 10. Document self-review
 
 Issue [#4](https://github.com/alanlima/signal-loop/issues/4) review on 2026-09-07: decision values/outcomes (section 2); distinctness/window/worked deduplication (2); report/item boundaries (8 S01-S12); granular withholding (3); audience/operator matrix (1/4); quote/paraphrase/synthesis rules (5, S13-S16); cross-project constraints (5, S17-S18); historical/differencing rules (6, S19-S23/S27); independent derived outputs and availability (3/6, S24-S25/S28-S29); retention/backups/AI (7); executable synthetic scenario inputs/outcomes (8); threat model and owned clearance conditions (1/9). This is a documentation criterion review, not a claim that implementation tests passed.
-
