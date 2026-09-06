@@ -18,8 +18,9 @@ Each `FeedbackSection` stores exactly:
 | `id` | Independently generated random UUID4, restricted source reference within the project/week |
 | `project_id` | Internal project scope integer; no relation to a person |
 | `week` | Organisation-local Monday date, never the global journey week |
-| `schema`, `privacy_policy` | Supported `project-feedback/1.0` and `1.0` |
-| `answers` | Validated J1/J2/J3 and permitted F1/F2 values only |
+| `schema`, `privacy_policy` | Canonical `feedback/1.0` and `1.0`, per #6 section 2 |
+| `data` | Server-generated `source`, `delivery`, `workload`, optional `note` and `follow_up` |
+| `provenance` | Required code producer/version and empty input references for a newly admitted source |
 | `expires_at` | Public local-window closing instant plus fourteen elapsed days, stored UTC |
 
 There are no foreign keys, user/account/member/principal identifiers, credentials,
@@ -45,8 +46,31 @@ later because of retries or edits, and no exact submission time is recorded.
 
 ## Validation and window context
 
-Input matches #14's sink dictionaries exactly: `project`, `week`, `schema`,
-`privacy_policy`, `answers`. Unknown envelope or answer keys reject the entire
+Intake matches #14's sink dictionaries exactly: `project`, `week`, `schema`,
+`privacy_policy`, `answers`, using the internal `project-feedback/1.0` intake schema.
+This is explicitly distinct from the canonical **persistence artifact**
+[`feedback/1.0`](../../_docs/analysis-contracts.md), whose exact envelope/data is
+validated by `validate_artifact`. `intake_to_artifact` is the tested adapter:
+
+| Intake | Canonical persistence artifact |
+| --- | --- |
+| J1 / J2 | `data.delivery` / `data.workload` |
+| Optional J3 | Optional `data.note`, retaining blank/normalized text |
+| Optional F1 or F2 | `data.follow_up = {question, answer}` |
+| Internal integer project ID | Opaque string `project` at the artifact boundary |
+| No caller source | Persistence-generated UUID in `data.source`, identical to the row's independent ID |
+| Public window scope | UTC RFC3339 `expires_at` from local closure +14 days |
+| No caller provenance | `provenance={producer: feedback-store, producer_version: 1.0, input_refs: []}` |
+
+`schema`, policy and local week are explicit; the adapter sets canonical schema
+`feedback/1.0` without reinterpreting unsupported versions. It does not accept
+client-chosen source/provenance or expose generated source IDs back to admission.
+`FeedbackSection.as_artifact()` is restricted in-process worker/test serialization,
+not a product or admission result. The reversible migration converts existing
+intake rows while preserving source UUIDs, values and original expiry; no payload
+is dropped or retimed. No #6 contract has been rewritten to match the old storage.
+
+Unknown envelope or answer keys reject the entire
 request, including personal fields and arbitrary nested JSON. Versions must match
 exactly; project IDs are positive signed-64-bit integers (not booleans), and weeks
 must be canonical local Monday ISO dates. One request has 1-3 distinct projects.
@@ -89,7 +113,9 @@ uv run --env-file .env.issue1 python manage.py makemigrations --check --dry-run
 ```
 
 Substitute your configured disposable environment-file path. Tests inspect actual
-PostgreSQL columns/constraints and synthetic rows; reject unknown/personal/nested
+PostgreSQL columns/constraints and synthetic rows; assemble the exact #6 section-2
+valid/invalid fixtures, verify adapter/follow-up/source/provenance mapping and
+migration preservation; reject unknown/personal/nested
 fields, bad enum/type/version/scope and excessive text/followups; preserve exact
 Unicode/newline/blank semantics; prove rollback after first row and outer-transaction
 failure; and confirm #14 behavior through its complete regression suite. No new

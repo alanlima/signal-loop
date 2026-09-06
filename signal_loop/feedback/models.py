@@ -1,5 +1,7 @@
 """Anonymous project-local sources; no identity or cross-project relationships."""
 import uuid
+from copy import deepcopy
+from datetime import timezone
 
 from django.db import models
 
@@ -24,7 +26,8 @@ class FeedbackSection(models.Model):
     week = models.DateField()
     schema = models.CharField(max_length=40)
     privacy_policy = models.CharField(max_length=20)
-    answers = models.JSONField()
+    data = models.JSONField()
+    provenance = models.JSONField(default=dict)
     expires_at = models.DateTimeField()
     objects = RestrictedQuerySet.as_manager()
 
@@ -41,3 +44,10 @@ class FeedbackSection(models.Model):
 
     def delete(self, *args, **kwargs):
         raise TypeError("Use the operations expiry/withdrawal boundary.")
+
+    def as_artifact(self):
+        """Restricted in-process artifact for workers/tests; never an admission result."""
+        return {"schema": self.schema, "project": str(self.project_id), "week": self.week.isoformat(),
+                "privacy_policy": self.privacy_policy,
+                "expires_at": self.expires_at.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "provenance": deepcopy(self.provenance), "data": deepcopy(self.data)}

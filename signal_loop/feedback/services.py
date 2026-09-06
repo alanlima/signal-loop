@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta
 from django.db import transaction
 from django.utils import timezone
 
-from signal_loop.contracts.feedback import InvalidFeedback, is_substantive, normalize_sections
+from signal_loop.contracts.feedback import InvalidFeedback, intake_to_artifact, is_substantive, normalize_sections
 from signal_loop.windows.services import project_week_scope
 
 from .models import FeedbackSection
@@ -48,9 +48,14 @@ def _persist_sections(sections, *, clock):
             raise PersistenceError()
         valid_scopes.append(scope)
         if is_substantive(section):
-            prepared.append(FeedbackSection(project_id=section["project"], week=week,
-                schema=section["schema"], privacy_policy=section["privacy_policy"],
-                answers=section["answers"], expires_at=scope.closes_at + timedelta(days=14)))
+            row = FeedbackSection(project_id=section["project"], week=week,
+                                  expires_at=scope.closes_at + timedelta(days=14))
+            artifact = intake_to_artifact(section, source=str(row.pk), expires_at=row.expires_at)
+            row.schema = artifact["schema"]
+            row.privacy_policy = artifact["privacy_policy"]
+            row.data = artifact["data"]
+            row.provenance = artifact["provenance"]
+            prepared.append(row)
     if not prepared:
         return "no_feedback"
     admitted_at = clock()

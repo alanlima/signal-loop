@@ -10,7 +10,7 @@ from django.contrib import admin
 from django.db import connection, transaction
 from django.test import TestCase
 
-from signal_loop.contracts.feedback import InvalidFeedback, SCHEMA, PRIVACY_POLICY, normalize_sections
+from signal_loop.contracts.feedback import ARTIFACT_SCHEMA, InvalidFeedback, SCHEMA, PRIVACY_POLICY, normalize_sections, validate_artifact
 from signal_loop.feedback.models import FeedbackSection
 from signal_loop.feedback.services import PersistenceError, persist_sections
 from signal_loop.membership.models import Organisation, Project
@@ -51,8 +51,12 @@ class PersistenceTests(TestCase):
             self.assertEqual(row.pk.version, 4)
             self.assertEqual(row.expires_at, window.closes_at + timedelta(days=14))
             self.assertEqual(row.week, date(2026, 9, 7))
+            self.assertEqual(row.schema, ARTIFACT_SCHEMA)
+            self.assertEqual(row.data["source"], str(row.pk))
+            self.assertEqual(row.provenance, {"producer": "feedback-store", "producer_version": "1.0", "input_refs": []})
+            validate_artifact(row.as_artifact())
         fields = {field.name for field in FeedbackSection._meta.fields}
-        self.assertEqual(fields, {"id", "project_id", "week", "schema", "privacy_policy", "answers", "expires_at"})
+        self.assertEqual(fields, {"id", "project_id", "week", "schema", "privacy_policy", "data", "provenance", "expires_at"})
         self.assertFalse(any(field.is_relation for field in FeedbackSection._meta.fields))
         self.assertEqual(FeedbackSection._meta.default_permissions, ())
         self.assertFalse(admin.site.is_registered(FeedbackSection))
@@ -104,8 +108,8 @@ class PersistenceTests(TestCase):
         payload[0]["answers"] = {"J1": "blocked", "J2": "manageable", "J3": "😀" * 320, "F1": "é" * 240}
         payload[1]["answers"]["J3"] = " \r\n\t\r "
         self.persist(payload)
-        self.assertEqual(FeedbackSection.objects.get(project_id=self.projects[0].pk).answers["J3"], "😀" * 320)
-        self.assertEqual(FeedbackSection.objects.get(project_id=self.projects[1].pk).answers["J3"], " \n\t\n ")
+        self.assertEqual(FeedbackSection.objects.get(project_id=self.projects[0].pk).data["note"], "😀" * 320)
+        self.assertEqual(FeedbackSection.objects.get(project_id=self.projects[1].pk).data["note"], " \n\t\n ")
         self.assertEqual(payload[1]["answers"]["J3"], " \r\n\t\r ")  # no caller mutation
 
     def test_declined_and_blank_sections_omitted_without_neutral_defaults(self):
@@ -117,7 +121,7 @@ class PersistenceTests(TestCase):
         payload[0]["answers"]["J3"] = "A synthetic shared concern"
         self.assertEqual(self.persist(payload), "complete")
         self.assertEqual(FeedbackSection.objects.count(), 1)
-        self.assertEqual(FeedbackSection.objects.get().answers["J1"], "prefer_not_to_say")
+        self.assertEqual(FeedbackSection.objects.get().data["delivery"], "prefer_not_to_say")
 
     def test_partial_database_failure_rolls_back_first_section(self):
         original_save = FeedbackSection.save
@@ -159,14 +163,14 @@ class PersistenceTests(TestCase):
     def test_direct_supported_mutations_cannot_insert_or_rewrite_raw_json(self):
         with self.assertRaises(TypeError):
             FeedbackSection.objects.create(project_id=1, week=date(2026, 9, 7), schema=SCHEMA,
-                                           privacy_policy=PRIVACY_POLICY, answers={"user": "synthetic"},
+                                           privacy_policy=PRIVACY_POLICY, data={"user": "synthetic"},
                                            expires_at=self.at)
         self.persist()
         row = FeedbackSection.objects.first()
         with self.assertRaises(TypeError):
             row.save()
         with self.assertRaises(TypeError):
-            FeedbackSection.objects.update(answers={"user": "synthetic"})
+            FeedbackSection.objects.update(data={"user": "synthetic"})
         with self.assertRaises(TypeError):
             FeedbackSection.objects.bulk_create([])
 
@@ -189,3 +193,41 @@ class PersistenceTests(TestCase):
             imports = [node.module or "" for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)]
             self.assertFalse(any(module.startswith(("signal_loop.admission", "signal_loop.membership", "django.contrib.auth"))
                                  for module in imports))
+
+    def test_exact_section_two_artifact_fixture_and_invalid_personal_narrative(self):
+        artifact = {"schema": "feedback/1.0", "project": "cedar", "week": "2026-09-07",
+                    "privacy_policy": "1.0", "expires_at": "2026-09-21T00:00:00Z",
+                    "provenance": {"producer": "fixture", "producer_version": "1.0", "input_refs": []},
+                    "data": {"source": "s1", "delivery": "at_risk", "workload": "manageable",
+                             "note": "Review turnaround delays shared work."}}
+        validate_artifact(artifact)
+        invalid = deepcopy(artifact)
+        invalid["data"] = {"source": "s1", "delivery": "at_risk", "workload": "manageable",
+                           "personal_challenges": "I was the only overnight specialist."}
+        with self.assertRaises(InvalidFeedback):
+            validate_artifact(invalid)
+        for field in ("expires_at", "provenance"):
+            invalid = deepcopy(artifact)
+            del invalid[field]
+            with self.assertRaises(InvalidFeedback):
+                validate_artifact(invalid)
+        invalid = deepcopy(artifact)
+        invalid["data"]["follow_up"] = {"question": "F1", "answer": "Shorten shared reviews."}
+        validate_artifact(invalid)
+
+    def test_intake_adapter_maps_followup_and_never_accepts_client_source(self):
+        payload = self.payload()
+        payload[0]["answers"] = {"J1": "blocked", "J2": "overloaded", "J3": "Synthetic note",
+                                  "F2": "Synthetic workload suggestion"}
+        self.assertEqual(self.persist(payload), "complete")
+        row = FeedbackSection.objects.get(project_id=self.projects[0].pk)
+        self.assertEqual(row.data, {"source": str(row.pk), "delivery": "blocked", "workload": "overloaded",
+                                   "note": "Synthetic note",
+                                   "follow_up": {"question": "F2", "answer": "Synthetic workload suggestion"}})
+        artifact = row.as_artifact()
+        self.assertEqual(artifact["project"], str(self.projects[0].pk))
+        self.assertNotIn("answers", artifact)
+        validate_artifact(artifact)
+        payload[0]["source"] = "client-chosen"
+        with self.assertRaises(PersistenceError):
+            self.persist(payload)
