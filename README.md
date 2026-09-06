@@ -130,3 +130,28 @@ are introduced.
 Settings are for local development only: debug mode is enabled and the secret
 key is a public development placeholder. Production settings and service
 configuration belong to later tasks.
+
+## Continuous integration and lint
+
+Pull requests and pushes to `main` run `.github/workflows/ci.yml` on Python 3.12.
+CI waits for disposable PostgreSQL and Redis health checks, then runs each check
+as a separate step. Any failed command fails the job. The database is discarded
+with the runner; its synthetic credentials are not production secrets.
+
+After the local environment and services above are ready, run the same checks:
+
+```powershell
+uv sync --locked
+$env:UV_ENV_FILE = '.env'
+$env:DJANGO_SETTINGS_MODULE = 'signal_loop.settings_ci'
+uv run python manage.py check
+uv run python manage.py migrate --noinput
+uv run pytest
+uv run ruff check .
+Remove-Item Env:DJANGO_SETTINGS_MODULE
+```
+
+Ruff configuration is in `pyproject.toml`; `uv run ruff check .` also runs alone
+without services. CI settings use Django's in-memory email backend, so email
+cannot leave the process. No AI integration exists yet; future AI tests must
+use deterministic fixtures rather than paid accounts or network requests.
