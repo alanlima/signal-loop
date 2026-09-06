@@ -127,6 +127,8 @@ Each person completes:
 
 The AI then aggregates feedback anonymously by project.
 
+The [MVP check-in policy](check-in-policy.md) fixes the questions, project-selection and follow-up budgets, and timing behavior. Personal reflection stays in the transient draft; only separately answered project fields can contribute to project aggregates.
+
 ---
 
 ### 10. Check-in duration
