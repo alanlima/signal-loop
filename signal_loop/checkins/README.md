@@ -1,4 +1,4 @@
-# Private personal reflection (#16)
+# Private check-in drafts (#16 and #17)
 
 The current check-in shell route now offers the exact P1-P5 form from
 [_docs/check-in-policy.md](../../_docs/check-in-policy.md). Personal answers stay
@@ -30,9 +30,20 @@ text visible and do not replace newer stored answers. Successful save acknowledg
 follow the database transaction. Storage/progression errors show fixed retry text
 and keep entered answers without exposing exception details. The fake progression
 callback takes **no arguments**, so it cannot receive P1-P5 or accidentally become
-a feedback submission. Next advances only to an explicit project-step placeholder;
-Back returns to personal reflection. #17/#20/#21 own later question/timer/submission
-integration. No final feedback is written or credential consumed in this issue.
+a feedback submission. Next advances to the frozen project sections. #19/#20/#21
+own adaptive questions, timer and submission integration. No final feedback is
+written or credential consumed by these forms.
+
+Project sections use exactly J1/J2/J3 and the #5 choices and 320-code-point J3
+limit. `ProjectDraft` stores these transient answers under the same private draft;
+deleting or expiring the parent cascades to every section. Full-page and HTMX
+Next/Back/save preserve each section independently and show current project and
+progress. The final placeholder explicitly says submission is unavailable.
+Unselected IDs, duplicate/extra fields and unauthorized organisation scopes are
+rejected. Authorized combined selections across organisations remain supported.
+Every request rechecks current eligibility. A revoked section requires explicit
+removal acknowledgement; removing it preserves other sections and cannot add a
+replacement or extend expiry. Removing every section shows an empty finish path.
 
 Expiry is the earliest selected local close/global UTC week-end/seven-day cap,
 frozen at Begin. Reads and writes deny expired drafts; access atomically reconciles
@@ -73,6 +84,12 @@ personal text in URLs, and no feedback submission. To test the fake failure, sto
 the owned server, set `$env:CHECKIN_REVIEW_FAIL='1'`, and restart the same command.
 Next must retain answers with a retry message. Remove that environment variable
 and restart to recover; do not start overlapping servers or use a stale port.
+
+After personal Next, enter different synthetic J1/J2/J3 answers in Birch and Cedar.
+Verify project progress, Next/Back, save/resume and J3 over-limit errors in full-page
+and HTMX requests. Adaptive F1/F2 controls must be absent. The project review
+placeholder must not claim submission. Test section removal only after navigation:
+it is permanent within this frozen journey, and removing both gives the empty path.
 
 ```powershell
 uv run --env-file .env.issue1 pytest --postgres signal_loop/checkins/tests signal_loop/accounts/tests/test_shell.py

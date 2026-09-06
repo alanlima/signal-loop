@@ -19,9 +19,8 @@
 </form>
 {% else %}
 {% if draft.expires_at %}<p class="eyebrow">Draft expires {{ draft.expires_at|date:"Y-m-d H:i:s" }} UTC</p>{% else %}<p>Expiry could not be checked. Keep this page open and retry.</p>{% endif %}
-{% if stage == 'projects' %}
-<div class="empty-state"><h2>Personal reflection saved</h2><p>Project questions are not available yet. No feedback has been submitted.</p></div>
-<form method="post">{% csrf_token %}<button class="secondary" name="action" value="back">Back to personal reflection</button></form>
+{% if stage == 'projects' or stage == 'project_review' %}
+{% include 'checkins/project.html' %}
 {% else %}
 <h2>Personal reflection</h2>
 <p>Your personal reflection stays in this draft and is discarded when you submit. Only your selected project answers can contribute to anonymous project summaries.</p>

@@ -30,3 +30,17 @@ class PersonalForm(forms.Form):
     P5 = ReflectionText(label="What support would help you next week?", required=False, max_length=240, strip=False,
                        widget=forms.Textarea(attrs={"rows": 3, "data-codepoint-limit": 240}),
                        help_text="Up to 240 characters. Avoid names, exact dates and details that could identify someone.")
+
+
+class ProjectForm(forms.Form):
+    J1 = forms.ChoiceField(choices=choices(["on_track", "at_risk", "blocked", "not_enough_context", "prefer_not_to_say"]))
+    J2 = forms.ChoiceField(choices=choices(["manageable", "stretched", "overloaded", "not_enough_context", "prefer_not_to_say"]))
+    J3 = ReflectionText(required=False, max_length=320, strip=False,
+                       widget=forms.Textarea(attrs={"rows": 3, "data-codepoint-limit": 320}),
+                       help_text="Up to 320 characters. Avoid names, exact dates and details that could identify someone.")
+
+    def __init__(self, *args, project_name, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["J1"].label = f"How is delivery going in {project_name} this week?"
+        self.fields["J2"].label = f"How manageable is the work in {project_name} this week?"
+        self.fields["J3"].label = f"What should improve or continue in {project_name} next week?"

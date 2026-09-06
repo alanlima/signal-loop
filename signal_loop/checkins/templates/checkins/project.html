@@ -1,0 +1,26 @@
+<p role="status">Personal reflection saved. No feedback has been submitted.</p>
+<p class="eyebrow" aria-live="polite">Project {{ project_number }} of {{ project_total }} · {{ project_resolved }} sections complete or removed</p>
+{% if project_message %}<p role="status">{{ project_message }}</p>{% endif %}
+{% if stage == 'project_review' %}
+<div class="empty-state"><h2>{% if no_projects_left %}No project feedback to submit{% else %}Project sections saved{% endif %}</h2>
+<p>{% if no_projects_left %}All selected sections were removed. You can discard this draft.{% else %}Your remaining sections are {% for project in project_sections %}{{ project.name }}{% if not forloop.last %}, {% endif %}{% endfor %}. Final review and submission are not available yet.{% endif %}</p></div>
+{% if not no_projects_left %}<form method="post" hx-post="{% url 'current_check_in' %}" hx-target="#application-shell" hx-swap="outerHTML">{% csrf_token %}<button name="action" value="project_return">Back to project sections</button></form>{% endif %}
+{% else %}
+<h2>{{ current_project.name }}: project reflection</h2>
+{% if not project_available %}
+<div class="empty-state"><h3>This project is no longer available</h3><p>Your other answers are preserved. Confirm removal below to discard this section; no replacement project can be added.</p></div>
+{% else %}
+{% if project_form.errors %}<div role="alert"><p>Review the errors for {{ current_project.name }}. Other sections are preserved.</p>{{ project_form.non_field_errors }}</div>{% endif %}
+<form method="post" class="personal-form" novalidate hx-post="{% url 'current_check_in' %}" hx-target="#application-shell" hx-swap="outerHTML">{% csrf_token %}
+  <input type="hidden" name="section" value="{{ current_project.pk }}"><input type="hidden" name="revision" value="{{ draft.revision }}">
+  {% for field in project_form %}<div class="form-field"><label for="{{ field.id_for_label }}">{{ field.label }} <span class="field-kind">({% if field.field.required %}Required{% else %}Optional{% endif %})</span></label>
+    {{ field }}{% if field.help_text %}<p class="help-text" id="{{ field.auto_id }}_helptext">{{ field.help_text }} <span data-count-for="{{ field.id_for_label }}" aria-live="polite"></span></p>{% endif %}
+    {% if field.errors %}<div id="{{ field.auto_id }}_error" role="alert">{{ field.errors }}</div>{% endif %}</div>{% endfor %}
+  <div class="form-actions"><button name="action" value="project_next">Next project</button><button name="action" value="project_back" class="secondary">Back</button><button name="action" value="project_save" class="secondary">Save and stay</button></div>
+</form>
+{% endif %}
+<form method="post" class="discard-form" hx-post="{% url 'current_check_in' %}" hx-target="#application-shell" hx-swap="outerHTML">{% csrf_token %}
+  <input type="hidden" name="section" value="{{ current_project.pk }}"><input type="hidden" name="revision" value="{{ draft.revision }}">
+  <label class="check-choice"><input type="checkbox" name="confirm" value="yes"> Discard this project's answers without adding a replacement</label><button name="action" value="project_omit" class="secondary">Remove this section</button>
+</form>
+{% endif %}
