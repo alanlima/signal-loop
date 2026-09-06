@@ -1,7 +1,11 @@
 document.addEventListener("htmx:afterSettle", function (event) {
-  if (event.detail.target.id === "application-shell") {
+  if (event.detail?.target?.id === "application-shell") {
     document.getElementById("main-content")?.focus();
   }
+});
+
+document.addEventListener("htmx:historyRestore", function () {
+  document.getElementById("main-content")?.focus();
 });
 
 document.addEventListener("htmx:responseError", function () {
