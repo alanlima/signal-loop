@@ -92,7 +92,7 @@ def test_redis_probe_requires_select_and_pong(monkeypatch, response, successful)
     else:
         assert errors[0].id == "signal_loop.E002"
     assert "secret" not in str(errors)
-    connect.assert_called_once_with(("127.0.0.1", 6379), timeout=3)
+    connect.assert_called_once_with((settings.REDIS["HOST"], settings.REDIS["PORT"]), timeout=3)
 
 
 @pytest.mark.parametrize("failure", [ConnectionRefusedError, TimeoutError])

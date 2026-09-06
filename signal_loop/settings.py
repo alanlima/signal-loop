@@ -120,7 +120,11 @@ SECRET_KEY = "development-only-not-for-production"
 DEBUG = True
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]"]
 
-INSTALLED_APPS = []
+INSTALLED_APPS = [
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "signal_loop.membership",
+]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
