@@ -55,6 +55,6 @@ jobs:
       - name: Apply migrations
         run: uv run python manage.py migrate --noinput
       - name: Tests
-        run: uv run pytest
+        run: uv run pytest --postgres
       - name: Python lint
         run: uv run ruff check .

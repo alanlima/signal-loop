@@ -31,8 +31,8 @@ uv run python manage.py runserver
 
 Both containers should show `healthy`, Django check should report no issues,
 and Redis should return `PONG`. Open http://127.0.0.1:8000/ and press Ctrl+C
-to stop Django. The skeleton has no application migrations yet; `migrate`
-still connects to PostgreSQL.
+to stop Django. Migrations create Django authentication and membership tables
+in PostgreSQL.
 
 Compose reads `.env` automatically. Django reads the process environment;
 `UV_ENV_FILE` tells uv to load `.env` for each `uv run` in this shell. Set it
@@ -109,7 +109,7 @@ uv run --env-file .env python manage.py migrate
 
 ## Tests
 
-Run the entire suite:
+Run the service-free tests (database tests are explicitly skipped):
 
 ```powershell
 uv run pytest
@@ -121,11 +121,16 @@ Run only the landing endpoint test:
 uv run pytest tests/test_home.py
 ```
 
-Tests use Django's test client, synthetic environment settings and simulated
-service failures; no running services are needed. Live integration checks are
-the startup, migration, readiness and persistence steps above.
-Database-backed tests will need database lifecycle configuration when models
-are introduced.
+The service-free tests use Django's test client, synthetic environment settings
+and simulated service failures. Run the entire suite, including membership
+database tests, against the configured disposable local services:
+
+```powershell
+uv run --env-file .env pytest --postgres
+```
+
+Django creates and drops a temporary test database; the disposable PostgreSQL
+user must have CREATEDB. See the [membership lifecycle and focused test commands](signal_loop/membership/README.md).
 
 Settings are for local development only: debug mode is enabled and the secret
 key is a public development placeholder. Production settings and service
@@ -146,7 +151,7 @@ $env:UV_ENV_FILE = '.env'
 $env:DJANGO_SETTINGS_MODULE = 'signal_loop.settings_ci'
 uv run python manage.py check
 uv run python manage.py migrate --noinput
-uv run pytest
+uv run pytest --postgres
 uv run ruff check .
 Remove-Item Env:DJANGO_SETTINGS_MODULE
 ```
