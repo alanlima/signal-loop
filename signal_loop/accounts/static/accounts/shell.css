@@ -28,6 +28,16 @@ p { line-height: 1.6; max-width: 65ch; }
 main.login { max-width: 30rem; }
 .errorlist, [role=alert] { color: #942329; }
 :focus-visible { outline: 3px solid #ad5200; outline-offset: 3px; }
+textarea { width: 100%; max-width: 100%; font: inherit; border: 1px solid #73878a; border-radius: .35rem; padding: .65rem; resize: vertical; }
+.personal-form { max-width: 42rem; }
+.form-field { margin: 1.4rem 0; }
+.field-kind, .help-text { font-size: .9rem; font-weight: 400; }
+.help-text { margin: .4rem 0; }
+.form-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.check-choice { display: flex; align-items: center; gap: .65rem; font-weight: 400; }
+.check-choice input { width: 1.25rem; flex: 0 0 1.25rem; }
+fieldset { border: 1px solid #73878a; border-radius: .35rem; min-width: 0; }
+.discard-form { margin-top: 2rem; }
 .skip-link { position: absolute; top: -10rem; left: 1rem; background: white; padding: .75rem; z-index: 10; }
 .skip-link:focus { top: .5rem; }
 @media (max-width: 400px) { .project-picker { flex-basis: 100%; } .project-picker select { width: 100%; } nav a { flex: 1 1 auto; } }

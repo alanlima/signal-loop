@@ -11,7 +11,7 @@ from django.test import TransactionTestCase
 
 from signal_loop.admission.models import Credential, Journey, Participation, Principal
 from signal_loop.admission.services import (
-    AdmissionError, IssuedCredential, VerifiedPrincipal, discard, issue, own_status, redeem,
+    AdmissionError, IssuedCredential, VerifiedPrincipal, discard, issue, own_status, redeem, reconcile_expired_journeys,
 )
 from signal_loop.membership.models import Organisation, OrganisationMembership, Project, ProjectMembership
 from signal_loop.windows.services import create_weekly_window
@@ -278,6 +278,9 @@ class AdmissionTests(TransactionTestCase):
         old = self.begin(scopes=[self.scopes[1]])
         new_time = datetime(2026, 9, 14, 1, tzinfo=timezone.utc)
         new = self.begin(scopes=[self.scopes[1]], at=new_time)
+        reconcile_expired_journeys(user=self.rowan, organisation=self.orgs[1], provider=self.provider,
+                                   clock=lambda: new_time)
+        self.assertEqual(Journey.objects.get(week=old.week).state, Journey.State.EXPIRED)
         self.assertEqual(own_status(user=self.rowan, organisation=self.orgs[1], week=old.week,
                                    provider=self.provider, clock=lambda: new_time), "unavailable")
         self.assertEqual(self.submit(new, clock=lambda: new_time), "complete")

@@ -273,6 +273,19 @@ def own_status(*, user, organisation, week, provider=deny_unverified, clock=time
             "open" if journey.state == Journey.State.OPEN else "unavailable")
 
 
+def reconcile_expired_journeys(*, user, organisation, provider=deny_unverified, clock=timezone.now):
+    """Seal expired own journeys across UTC weeks without reading response content."""
+    identifier = _resolve(user, [organisation], provider)
+    with transaction.atomic():
+        principal = Principal.objects.select_for_update().filter(pk=identifier).first()
+        if not principal or not get_user_model().objects.filter(pk=user.pk, is_active=True).exists():
+            return
+        at = _now(clock)
+        for journey in Journey.objects.filter(principal=principal, state=Journey.State.OPEN,
+                                               expires_at__lte=at).order_by("pk"):
+            _seal(journey, Journey.State.EXPIRED)
+
+
 def discard(*, user, organisation, week, provider=deny_unverified, clock=timezone.now):
     identifier = _resolve(user, [organisation], provider)
     with transaction.atomic():
