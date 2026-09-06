@@ -55,7 +55,9 @@ The AI should only dig deeper when an answer indicates something worth exploring
 Feedback should be anonymous.
 
 ### Hard product rule
-Managers must **never** be able to trace anonymous feedback back to an individual.
+The product must prevent managers and application administrators from accessing raw feedback or linking published feedback to contributors through product-provided identifiers, joins or unsafe content. Publication fails closed under the mandatory [MVP anonymity policy](anonymity-policy.md).
+
+This is a product-enforced access and publication requirement, not a guarantee against arbitrary prior knowledge, collusion or privileged infrastructure access. The policy defines those limits, fixed thresholds, content rules and release blockers; meeting a threshold or removing a name alone does not prove anonymity.
 
 This is not a configurable setting in the MVP.
 
@@ -265,7 +267,7 @@ For each important issue, the manager view should show:
 - Explanation of why it matters
 - Trend/history
 - Anonymous supporting evidence
-- Anonymous quotes or synthesised examples where appropriate
+- Privacy-reviewed paraphrases or labelled, grounded synthesised examples where permitted by the anonymity policy; no verbatim feedback quotes
 - Recommended manager actions
 
 The system should **not expose the identity of the contributor**.
@@ -409,7 +411,7 @@ This may be introduced later as context for feedback.
 ### 1. Anonymous means anonymous
 The product must earn trust.
 
-A manager must never be able to reverse-engineer who submitted a piece of anonymous feedback.
+Prevent product-enabled identification and withhold outputs with unresolved inference risk, following the [MVP anonymity policy](anonymity-policy.md). Communicate its residual-risk limits before collecting feedback.
 
 ### 2. Short enough to become a habit
 The product should feel like a weekly check-in rather than a survey.
