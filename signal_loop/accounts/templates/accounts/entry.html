@@ -1,14 +1,2 @@
-<!doctype html>
-<html lang="en">
-  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>SignalLoop</title></head>
-  <body>
-    <main>
-      <h1>SignalLoop</h1>
-      <p>You are signed in.</p>
-      <form method="post" action="{% url 'logout' %}">
-        {% csrf_token %}
-        <button type="submit">Sign out</button>
-      </form>
-    </main>
-  </body>
-</html>
+{% extends "accounts/base.html" %}
+{% block content %}{% include "accounts/shell_panel.html" %}{% endblock %}

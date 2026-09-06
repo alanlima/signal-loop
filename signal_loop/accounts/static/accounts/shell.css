@@ -1,0 +1,33 @@
+:root { color-scheme: light; font-family: system-ui, sans-serif; color: #192b32; background: #f4f7f6; }
+* { box-sizing: border-box; }
+body { margin: 0; overflow-wrap: anywhere; }
+a { color: #075c60; }
+.brand { padding: 1.25rem max(1rem, calc((100% - 64rem) / 2)); background: #123e43; color: white; font-size: 1.4rem; font-weight: 750; }
+.brand span { display: block; font-size: .85rem; font-weight: 400; margin-top: .25rem; color: #d7e9e6; }
+#application-shell, main.login { max-width: 64rem; margin: auto; padding: 1rem; }
+.toolbar { display: flex; justify-content: space-between; align-items: end; gap: 1rem; flex-wrap: wrap; }
+.project-picker { display: flex; align-items: end; gap: .5rem; flex-wrap: wrap; flex: 1; min-width: 0; }
+.project-picker label { flex-basis: 100%; }
+label { display: block; font-weight: 650; margin-bottom: .25rem; }
+select, input, button { font: inherit; min-height: 2.75rem; max-width: 100%; border: 1px solid #73878a; border-radius: .35rem; padding: .55rem .75rem; }
+select { width: min(100%, 22rem); min-width: 0; background: white; }
+input { width: 100%; background: white; }
+button { background: #075c60; color: white; cursor: pointer; font-weight: 650; }
+button.secondary { color: #075c60; background: white; }
+nav { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1.5rem 0; }
+nav a { display: inline-flex; align-items: center; min-height: 2.75rem; padding: .6rem .8rem; border-radius: .35rem; text-decoration: none; }
+nav a[aria-current] { background: #d6e8e3; color: #123e43; font-weight: 750; }
+nav a:hover { text-decoration: underline; }
+main { min-width: 0; }
+h1 { font-size: clamp(1.65rem, 5vw, 2.25rem); line-height: 1.15; margin: 1.5rem 0; }
+h2 { font-size: 1.25rem; margin: 0 0 .7rem; }
+p { line-height: 1.6; max-width: 65ch; }
+.empty-state { border: 1px solid #cfdbd8; background: white; border-radius: .65rem; padding: clamp(1rem, 4vw, 2rem); }
+.empty-state p { margin-bottom: 0; }
+.eyebrow { font-weight: 650; color: #426167; }
+main.login { max-width: 30rem; }
+.errorlist, [role=alert] { color: #942329; }
+:focus-visible { outline: 3px solid #ad5200; outline-offset: 3px; }
+.skip-link { position: absolute; top: -10rem; left: 1rem; background: white; padding: .75rem; z-index: 10; }
+.skip-link:focus { top: .5rem; }
+@media (max-width: 400px) { .project-picker { flex-basis: 100%; } .project-picker select { width: 100%; } nav a { flex: 1 1 auto; } }

@@ -1,6 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
-from django.shortcuts import render
+from signal_loop.navigation import render_shell
 
 
 class SignInView(LoginView):
@@ -27,4 +27,9 @@ class SignOutView(LogoutView):
 
 @login_required
 def application_entry(request):
-    return render(request, "accounts/entry.html")
+    return render_shell(request)
+
+
+@login_required
+def shell_destination(request, destination):
+    return render_shell(request, destination)
