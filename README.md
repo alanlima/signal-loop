@@ -44,6 +44,38 @@ over `.env`; clear stale overrides if settings do not match.
 matches the committed `uv.lock` for reproducible setup. uv creates `.venv`
 automatically, so manual activation is unnecessary.
 
+## Local sign-in
+
+After migrations, provision an initial local account interactively:
+
+```powershell
+uv run --env-file .env python manage.py createsuperuser
+```
+
+Django prompts for username, email and a hidden password; do not put the password
+in command arguments or tracked files. This initial account has Django superuser
+privileges. Ordinary pre-provisioned active Django users can also sign in; public
+self-registration is not exposed. Account provisioning does not create project
+membership or project manager authority.
+
+Open http://127.0.0.1:8000/app/ to sign in. Login preserves a safe local return
+path; invalid/external paths return to `/app/`. Sign out uses the CSRF-protected
+POST form. The public root `/` remains the expected blank page.
+
+Sessions use database storage, HttpOnly cookies and SameSite=Lax; login and logout
+POSTs require CSRF protection. Current settings permit local HTTP. Before an HTTPS
+production deployment (#42), its separate settings must set
+`SESSION_COOKIE_SECURE=True` and `CSRF_COOKIE_SECURE=True`, enforce HTTPS, configure
+trusted proxy/host settings and a private secret key, and disable DEBUG. Do not
+deploy the development settings unchanged. No production configuration is added
+by this local sign-in setup.
+
+Focused authentication requests, including CSRF and logout session replay:
+
+```powershell
+uv run --env-file .env pytest --postgres signal_loop/accounts/tests
+```
+
 ## Services and readiness
 
 | Service | Pinned image | Default host port | Readiness | Storage |

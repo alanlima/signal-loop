@@ -123,16 +123,37 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]"]
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "signal_loop.accounts",
     "signal_loop.membership",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 ROOT_URLCONF = "signal_loop.urls"
+TEMPLATES = [{
+    "BACKEND": "django.template.backends.django.DjangoTemplates",
+    "APP_DIRS": True,
+    "OPTIONS": {"context_processors": [
+        "django.template.context_processors.request",
+        "django.contrib.auth.context_processors.auth",
+    ]},
+}]
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "application_entry"
+LOGOUT_REDIRECT_URL = "login"
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+# Local HTTP only; the production settings handoff must enable both for HTTPS.
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 WSGI_APPLICATION = "signal_loop.wsgi.application"
 ASGI_APPLICATION = "signal_loop.asgi.application"
 
