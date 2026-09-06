@@ -47,9 +47,9 @@ closure integration as the approved protocol requires.
 Input sections are `{project: int, week: local_Monday_ISO_date, answers: {...}}`.
 Only J1/J2/J3/F1/F2 keys and string values enter the transport shape; J1/J2 enums,
 text limits, normalized newlines, follow-up triggers and maximum one follow-up per
-project/two total are checked. Personal fields and unknown envelope keys reject.
-Non-substantive sections do not consume participation. #15 owns the final shared
-payload contract; #20/#21 additionally prove question presentation/budget, draft
+project/two total are checked by `signal_loop.contracts.feedback`, shared with the
+#15 persistence sink. Personal fields and unknown envelope keys reject.
+Non-substantive sections do not consume participation. #20/#21 additionally prove question presentation/budget, draft
 revision, explicit removal acknowledgement and full frozen-draft validation.
 
 The sink receives independent dictionaries containing exactly `project`, local
