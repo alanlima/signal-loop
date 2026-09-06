@@ -130,6 +130,7 @@ INSTALLED_APPS = [
     "django_htmx",
     "signal_loop.accounts",
     "signal_loop.membership",
+    "signal_loop.windows",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

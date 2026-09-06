@@ -9,7 +9,7 @@ Use Django apps under `signal_loop/` with the names below. Each app owns its mod
 | `accounts` | Django authentication integration, sign-in/out, account lifecycle | Django auth only |
 | `membership` | Organisations, projects, membership/manager roles; scoped eligibility facts | accounts |
 | `authorization` | Central project/audience authorization predicates, deny by default | accounts, membership |
-| `windows` | UTC project-week opening/closing, immutable window scope | membership |
+| `windows` | Organisation-local Monday project-week boundaries stored as UTC instants, immutable window scope | membership |
 | `admission` | Eligibility credentials, transient identity-side participation state, retry/admission decision; protocol remains #13 | authorization, windows, contracts |
 | `checkins` | Own transient personal/project drafts, question catalog/budget, conflict-safe save, timer and finish path | authorization, windows, admission, contracts |
 | `feedback` | Anonymous project-week feedback persistence, scoped restricted source access and expiry | contracts, windows; no accounts/membership/admission model imports |
