@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import render
+from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.module_loading import import_string
 from django.views.decorators.debug import sensitive_post_parameters
@@ -20,8 +21,9 @@ from signal_loop.navigation import render_shell
 from signal_loop.windows.services import eligible_projects
 from signal_loop.windows.models import WeeklyWindow
 
-from .forms import PersonalForm
+from .forms import PersonalForm, ProjectForm
 from .models import PersonalDraft
+from .project_stage import project_stage
 
 
 @dataclass(frozen=True)
@@ -64,15 +66,19 @@ def _state(user, at, provider):
 
 @login_required
 @require_http_methods(["GET", "POST"])
-@sensitive_post_parameters("P1", "P2", "P3", "P4", "P5")
+@sensitive_post_parameters("P1", "P2", "P3", "P4", "P5", "J1", "J2", "J3")
 def personal_check_in(request):
     try:
         return _personal_check_in(request)
     except Exception:
         # Keep entered reflection recoverable without logging exception locals/body.
-        form = PersonalForm({key: request.POST.get(key, "") for key in PersonalForm.base_fields})
+        project_request = request.POST.get("action", "").startswith("project_")
+        form = ProjectForm({key: request.POST.get(key, "") for key in ProjectForm.base_fields}, project_name="this project") if project_request else PersonalForm(
+            {key: request.POST.get(key, "") for key in PersonalForm.base_fields})
         form.add_error(None, "We could not save or load the draft. Keep this page open and try again.")
-        response = render(request, "checkins/retry.html", {"stage": "personal", "form": form,
+        response = render(request, "checkins/retry.html", {"stage": "projects" if project_request else "personal", "form": form,
+            "project_form": form, "current_project": SimpleNamespace(pk=request.POST.get("section", ""), name="Current project"),
+            "project_available": True, "project_number": "?", "project_total": "?", "project_resolved": "?",
             "draft": SimpleNamespace(revision=request.POST.get("revision", "0"), expires_at=None)}, status=503)
         response["Cache-Control"] = "private, no-store"
         return response
@@ -108,6 +114,8 @@ def _personal_check_in(request):
         context["stage"] = "complete" if status == "complete" else "expired"
         return render_shell(request, "current_check_in", extra_context=context)
     action = request.POST.get("action", "") if request.method == "POST" else ""
+    if request.method == "POST" and any(key in request.POST for key in {"section", "J1", "J2", "J3"}) and not action.startswith("project_"):
+        return HttpResponse("Not found.", status=404, content_type="text/plain")
     if not journey:
         context["stage"] = "select" if candidates else "empty"
         selected = {row.project_id for row in candidates} if len(candidates) <= 3 else set()
@@ -177,6 +185,15 @@ def _personal_check_in(request):
                             form.add_error(None, "We could not continue. Your answers are saved. Try Next again.")
                     elif valid:
                         context["saved"] = True
+        if draft.stage in {"projects", "project_review"}:
+            project_context = project_stage(request, journey=journey, draft=draft, candidates=candidates)
+            if isinstance(project_context, HttpResponse):
+                return project_context
+            context.update(project_context)
+            if draft.stage == "personal":
+                form = PersonalForm(initial=draft.answers)
+        elif action.startswith("project_") or "section" in request.GET:
+            return HttpResponse("Not found.", status=404, content_type="text/plain")
         context.update(stage=draft.stage, form=form, draft=draft)
     response = render_shell(request, "current_check_in", extra_context=context)
     response["Cache-Control"] = "private, no-store"
