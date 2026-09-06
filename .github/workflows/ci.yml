@@ -1,0 +1,60 @@
+name: Python checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:18.3-bookworm
+        env:
+          POSTGRES_DB: signal_loop_ci
+          POSTGRES_USER: signal_loop_ci
+          POSTGRES_PASSWORD: disposable-ci-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U signal_loop_ci -d signal_loop_ci"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+      redis:
+        image: redis:8.2.4-bookworm
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      DJANGO_SETTINGS_MODULE: signal_loop.settings_ci
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: signal_loop_ci
+      POSTGRES_USER: signal_loop_ci
+      POSTGRES_PASSWORD: disposable-ci-password
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.10"
+          python-version: "3.12"
+      - name: Install committed dependencies
+        run: uv sync --locked
+      - name: Django system checks
+        run: uv run python manage.py check
+      - name: Apply migrations
+        run: uv run python manage.py migrate --noinput
+      - name: Tests
+        run: uv run pytest
+      - name: Python lint
+        run: uv run ruff check .
