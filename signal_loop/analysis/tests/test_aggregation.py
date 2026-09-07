@@ -6,7 +6,7 @@ import json
 import pytest
 
 from signal_loop.analysis.aggregation import Assessment, RestrictedAnalysisInput, Suppressed, aggregate
-from signal_loop.contracts.feedback import validate_artifact
+from signal_loop.contracts.analysis import Scope, validate_artifact
 
 
 CLOSE = datetime(2026, 9, 14, tzinfo=timezone.utc)
@@ -62,7 +62,7 @@ def test_exact_canonical_envelopes_restricted_and_defensive_copies():
     assert result.expires_at == CLOSE + timedelta(days=14)
     assert result.feedback_for_analysis() == tuple(rows)
     for artifact in result.feedback_for_analysis():
-        validate_artifact(artifact)
+        validate_artifact(artifact, Scope("cedar", "2026-09-07", CLOSE, CLOSE))
     rows[0]["data"]["note"] = "changed caller"
     copy = result.feedback_for_analysis()
     copy[0]["data"]["note"] = "changed consumer"
@@ -92,6 +92,16 @@ def test_untrusted_counts_and_missing_proof_never_suffice():
     repeated = artifacts(4)
     repeated.append(deepcopy(repeated[0]))
     assert run(repeated) == Suppressed()
+
+
+@pytest.mark.parametrize("mutation", ["missing_seconds", "unnormalized_producer"])
+def test_strict_downstream_envelope_rejects_qa_mutations(mutation):
+    rows = artifacts()
+    if mutation == "missing_seconds":
+        rows[0]["expires_at"] = "2026-09-28T00:00Z"
+    else:
+        rows[0]["provenance"]["producer_version"] = "v1\rv2"
+    assert run(rows) == Suppressed()
 
 
 @pytest.mark.parametrize("change", ["personal", "crossproject", "crossweek", "unknown", "version", "refs", "declined"])

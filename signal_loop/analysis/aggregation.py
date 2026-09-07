@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta
 import re
 from typing import Protocol
 
-from signal_loop.contracts.feedback import validate_artifact
+from signal_loop.contracts.analysis import Scope, validate_artifact
 
 
 @dataclass(frozen=True)
@@ -75,9 +75,10 @@ def aggregate(*, project, week, artifacts, closes_at, at, verifier=None, thresho
         inputs = deepcopy(tuple(artifacts))
         sources = set()
         expiries = []
+        scope = Scope(project, week, closes_at, at)
         for artifact in inputs:
-            validate_artifact(artifact)
-            if artifact["project"] != project or artifact["week"] != week:
+            validate_artifact(artifact, scope)
+            if artifact["schema"] != "feedback/1.0":
                 return Suppressed()
             source = artifact["data"]["source"]
             if source in sources:
