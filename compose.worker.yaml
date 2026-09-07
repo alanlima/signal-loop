@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile.worker
     profiles: [worker]
     environment:
+      DJANGO_SETTINGS_MODULE: ${WORKER_DJANGO_SETTINGS_MODULE:-signal_loop.settings_worker}
       POSTGRES_HOST: 127.0.0.1
       POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB}
@@ -18,4 +19,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    stop_grace_period: 15s
+    stop_grace_period: 100s
+  beat:
+    extends:
+      service: worker
+    command: ["/app/.venv/bin/celery", "-A", "signal_loop", "beat", "--schedule=/tmp/signal-loop-beat", "--loglevel=INFO"]
+    stop_grace_period: 10s
