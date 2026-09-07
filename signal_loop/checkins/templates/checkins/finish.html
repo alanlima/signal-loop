@@ -18,5 +18,5 @@
 {% include 'checkins/fields.html' with fields_form=followup.form %}
 {% if followup.excluded %}<p>This follow-up is excluded because the project answers changed. Its text remains editable but cannot enter feedback.</p><label class="check-choice"><input type="checkbox" name="acknowledge" value="yes"{% if followup.acknowledged %} checked{% endif %}> I acknowledge this answer is excluded</label>{% endif %}
 <div class="form-actions"><button name="action" value="finish_adaptive">Save follow-up</button><button name="action" value="finish_skip" class="secondary">Skip follow-up</button></div></form>{% endfor %}
-<form method="post">{% csrf_token %}<input type="hidden" name="revision" value="{{ draft.revision }}"><button name="action" value="preview_submit">Finish practice check-in</button></form>
-<p>This is the local final-submission preview. It stores no feedback and consumes no admission credentials; real submission is not connected yet.</p>
+<form method="post" action="{% url 'submit_check_in' %}">{% csrf_token %}<input type="hidden" name="revision" value="{{ draft.revision }}"><input type="hidden" name="week" value="{{ draft.journey.week|date:'Y-m-d' }}"><button>Submit check-in</button></form>
+<p>Submit your saved project answers once. Your personal reflection and private draft are deleted on successful submission.</p>

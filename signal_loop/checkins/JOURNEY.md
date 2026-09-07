@@ -13,7 +13,7 @@ content. The UI displays a countdown and exact deadline; the server decides ever
 transition. Reaching the deadline does not navigate away from unsaved browser
 text. The next save/request opens finish, preserving typed values. No new unseen
 questions are rendered there: participants can edit previously seen questions,
-acknowledge removal of unseen/incomplete projects, save, skip, preview finish or
+acknowledge removal of unseen/incomplete projects, save, skip, submit or
 discard. Previously unseen personal questions are waived at timeout. Already-seen
 invalid questions still require correction or permitted removal/skip.
 
@@ -43,18 +43,14 @@ save edited sections before moving between separate finish forms.
 
 ## Final-submission boundary
 
-The button is explicitly **Finish practice check-in**. The default
-`signal_loop.submission.services.preview_submission(sections)` receives only
-validated substantive project/local-week J/F sections. No P1-P5, draft ID,
-principal, clock, budget or shared feedback identifier reaches that seam.
-`CHECKIN_FINAL_SUBMISSION` can replace the callable in controlled tests.
-
-`preview_complete` shows that no feedback was submitted. It writes no feedback,
-consumes no admission and leaves the recoverable draft intact until discard/expiry.
-It never sets admission `completed`, whose protocol meaning requires submission.
-Invalid/incomplete/revoked sections or unresolved follow-ups block the preview;
-failure preserves answers. #21 must replace this seam with credential redemption,
-atomic persistence and cleanup, and replace practice copy with real completion.
+The **Submit check-in** button now uses #21's real atomic endpoint. It reads only
+validated substantive project/local-week J/F sections from the owned saved draft,
+consumes admission once, persists canonical anonymous rows and deletes all private
+draft state in the same transaction. Failed submission preserves recoverable
+answers; success and lost-response replay show the same generic completion.
+See [submission/README.md](../submission/README.md) for the transaction, closure
+lock and retry contract. The former no-write preview survives only as an explicitly
+configured test seam and is not offered by the browser.
 
 ## Reproducible keyboard/mobile review
 
@@ -73,8 +69,8 @@ principals. The seed preserves existing journeys and never resets a weekly seal.
 
 | Account | Fixture and expected flow |
 | --- | --- |
-| synthetic_journey_ordinary | One project. P1/P2 choices and optional texts; on_track/manageable with optional J3; no adaptive question, 10/10, practice finish. |
-| synthetic_journey_many | Four eligible projects, none preselected. Choose three. Use blocked for the first, overloaded for the second, at_risk for the third: exactly two adaptive questions, fixed16 slots. Skip one, answer the other, review and practice finish. |
+| synthetic_journey_ordinary | One project. P1/P2 choices and optional texts; on_track/manageable with optional J3; no adaptive question, 10/10, submit and complete. |
+| synthetic_journey_many | Four eligible projects, none preselected. Choose three. Use blocked for the first, overloaded for the second, at_risk for the third: exactly two adaptive questions, fixed16 slots. Skip one, answer the other, review and submit. |
 | synthetic_journey_zero | Authorized shell project but no current window: explicit no-project message, no Begin, timer or questions. |
 | synthetic_personal_review | Existing Birch/New York and Cedar/Brisbane combined fixture, retained for #16/#17 regression. |
 

@@ -192,6 +192,8 @@ def handle_journey(request, *, journey, draft, context):
 
 
 def _save_journey_action(request, journey, draft_id, action, context):
+    if action == "preview_submit" and not getattr(settings, "CHECKIN_FINAL_SUBMISSION", None):
+        return HttpResponse("Not found.", status=404)
     allowed = {"csrfmiddlewaretoken", "action", "revision"}
     if action == "finish_personal":
         allowed |= set(PersonalForm.base_fields)

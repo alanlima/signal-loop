@@ -191,14 +191,46 @@ def _anonymous_sections(sections):
         raise AdmissionError("invalid_submission") from None
 
 
-def redeem(*, user, week, claims, sections, sink, provider=deny_unverified,
-           clear_draft=None, clock=timezone.now):
+def refresh_credentials(*, user, week, scopes, provider=deny_unverified, clock=timezone.now):
+    """Refresh only retained scopes of an existing journey, never Begin or replace it.
+
+    #21 calls within its outer transaction so locks/ephemeral secrets remain in
+    memory through redemption. Original selection, start and expiry stay frozen.
+    """
+    windows, projects = _scope_rows(scopes)
+    with transaction.atomic():
+        principal, organisations = _lock_context(user, windows, projects, provider)
+        at = _now(clock)
+        journey = Journey.objects.filter(principal=principal, week=week).first()
+        if (global_week(at)[0] != week or not journey or journey.state != Journey.State.OPEN
+                or at >= journey.expires_at or any([p, w] not in journey.selected_scopes for p, w in scopes)):
+            raise AdmissionError()
+        _check_eligibility(user, organisations, scopes, at)
+        issued = []
+        for project, window_id in sorted(scopes):
+            participation = Participation.objects.select_for_update().filter(principal=principal,
+                project_id=project, window_id=window_id, consumed=False).first()
+            credential = Credential.objects.select_for_update().filter(participation=participation, active=True).first()
+            if (not participation or not credential or credential.purpose != "project-feedback-v1"
+                    or at >= credential.expires_at):
+                raise AdmissionError()
+            secret = secrets.token_urlsafe(32)
+            credential.verifier = hashlib.sha256(secret.encode()).hexdigest()
+            credential.save(update_fields=["verifier"])
+            issued.append(IssuedCredential(project, window_id, secret))
+        return Issuance(week, journey.expires_at, tuple(issued))
+
+
+def redeem(*, user, week, claims, sections, sink=None, provider=deny_unverified,
+           clear_draft=None, clock=timezone.now, admitted_sink=None):
     """Reject repeated redemption; own_status separately reconciles a lost response.
 
     `sink(sections)` and optional `clear_draft()` are trusted transaction participants.
     They must use the current connection, raise on failure, return no source IDs,
     and perform no external effects. #21 wires the real draft/persistence adapters.
     """
+    if (sink is None) == (admitted_sink is None):
+        raise AdmissionError("invalid_submission")
     if not isinstance(claims, (list, tuple)) or any(not isinstance(c, IssuedCredential) for c in claims):
         raise AdmissionError("invalid_submission")
     scopes = [(c.project, c.window) for c in claims]
@@ -246,7 +278,10 @@ def redeem(*, user, week, claims, sections, sink, provider=deny_unverified,
                     continue
                 participation.consumed = True
                 participation.save(update_fields=["consumed"])
-            sink(anonymous)
+            if admitted_sink is not None:
+                admitted_sink(anonymous, admitted_at)
+            else:
+                sink(anonymous)
             if clear_draft is not None:
                 clear_draft()
             _seal(journey, Journey.State.COMPLETED)
