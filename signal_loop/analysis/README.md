@@ -172,3 +172,38 @@ fixture checks: inclusive directional boundaries, stable and recurring concerns,
 renames, gaps, thresholds, partial withholding, source grounding, original-history
 review binding, privacy failures, expiry and public-status redaction. No database,
 provider call or fixture identity mapping is needed by this pure service.
+
+## Restricted severity and evidence handoff (#28)
+
+`severity.score_issues(eligible=..., themes=..., candidates=..., at=...,
+closes_at=..., history=...)` implements the explicit weighted numeric
+[severity rules](../../_docs/severity-rules.md). The result's `calculations`
+contain severity, rule score, all six factors/origins and a readable explanation;
+`unscored` identifies missing/uncertain factors without a severity default.
+Estimates are independently checked against entire source fields; calculated
+support is not a model count or roster size. Safe #27 history is required by the
+integrated scorer: its current contract proves recurrence, not an isolated
+appearance, so missing history yields unscored rather than zero persistence.
+
+`SeverityAssessment.issues` is optional `RestrictedIssues`. Its
+`artifact_for_analysis()` returns exact `issues/1.0`; factor metadata stays
+outside canonical rows. `source_context_for_analysis()` returns defensive
+`IssuesSourceContext(eligible, themes, trends, references)` for #29. The registry
+contains `Reference(kind="issues", ...)` only for successfully scored canonical
+rows, with project/week and earliest-source expiry. An unscored ID cannot resolve
+as an issue. #29 must independently inspect source contents, grounding, counts,
+privacy and joint context; neither severity nor this registry proves safety.
+
+Inputs are trusted internal #25/#26/#27 handoffs, never client-deserialized
+eligibility or publication permissions. `SeverityHistory` carries the exact
+weekly snapshots and the existing history reviewer; #33 owns production wiring.
+No UI, model call, dependency or storage write is added. Public status remains
+uniform `unavailable`, including for critical scored candidates. The arithmetic
+helper can evaluate documented theoretical factor combinations; it cannot grant
+integrated eligibility or override any release gate.
+
+Run `uv run pytest signal_loop/analysis/tests/test_severity.py` for deterministic
+full-service level boundaries, factor thresholds/origins, conflicting evidence,
+unknown factors, unsupported/injected estimates, unsafe urgent small-support
+cases, and the exact #29 reference handoff. Tests use synthetic actual source
+contents and the implemented grounding/history validators, without a live model.
