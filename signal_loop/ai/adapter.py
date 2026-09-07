@@ -1,5 +1,5 @@
 """Bounded synchronous provider calls in disposable, joined worker processes."""
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 import json
 import math
@@ -140,12 +140,19 @@ class Adapter:
         self._provider = provider
         self.configuration = configuration or Configuration()
 
-    def follow_up(self, request) -> Result:
+    def follow_up(self, request, *, time_allowance=None) -> Result:
         try:
             validate_request(request)
+            limits = self.configuration.followup
+            if time_allowance is not None:
+                require(type(time_allowance) in (int, float) and math.isfinite(time_allowance))
+                if time_allowance <= 0:
+                    return Result(failure=Failure.TIMEOUT)
+                limits = replace(limits, timeout=min(limits.timeout, time_allowance),
+                                 total_timeout=min(limits.total_timeout, time_allowance))
         except Exception:
             return Result(failure=Failure.INVALID_REQUEST)
-        return self._run("followup", request, self.configuration.followup_model, self.configuration.followup,
+        return self._run("followup", request, self.configuration.followup_model, limits,
                          lambda response: validate_response(response, request))
 
     def structured_analysis(self, request, *, scope) -> Result:

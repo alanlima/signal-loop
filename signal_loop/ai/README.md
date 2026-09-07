@@ -70,6 +70,8 @@ adapter = Adapter(FakeProvider(), Configuration(
     analysis=Limits(timeout=5, total_timeout=10, max_attempts=2),
 ))
 result = adapter.follow_up(request)
+# A caller may shorten the existing cap for a nearly elapsed journey:
+# result = adapter.follow_up(request, time_allowance=0.5)
 ```
 
 Defaults above are explicit seconds/total attempts, including the first attempt.
