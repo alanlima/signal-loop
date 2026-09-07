@@ -207,3 +207,64 @@ full-service level boundaries, factor thresholds/origins, conflicting evidence,
 unknown factors, unsupported/injected estimates, unsafe urgent small-support
 cases, and the exact #29 reference handoff. Tests use synthetic actual source
 contents and the implemented grounding/history validators, without a live model.
+
+## Safe evidence transformation (#29)
+
+`evidence.transform_evidence(issues, closes_at=..., at=..., adapter=...,
+context_provider=...)` accepts the actual #28 `RestrictedIssues` handoff. It calls
+the #18 adapter with exact `analysis-request/1.0` inputs (complete current
+feedback, themes and issues) and validates exact `evidence/1.0` output. Provider
+wrappers select `EVIDENCE_INSTRUCTIONS` for this operation; source text remains
+untrusted data. No vendor, production context provider or persistence is added.
+
+The runtime uses a finite reviewed catalog, rather than treating model
+`grounded=true` or referenced IDs as proof. Each item must name a scored issue
+and cite at least five actual supporters of the same complete factual claim.
+Every cited source is independently checked against the exact structured enum
+or entire narrative field using the #26 grounder. Unknown wording, extra clauses,
+negation/qualifiers, stronger certainty and unsupported facts cannot pass by
+substring matching. The catalog currently covers overloaded/stretched workload,
+at-risk/blocked delivery, review turnaround and handoff coordination. For example,
+five `overloaded` answers support “The volume of work exceeds available capacity.”
+Five complete “Review turnaround delays shared work.” answers support “Shared
+work is delayed by review turnaround.” The synthetic variant “Review queues can
+delay shared work.” must carry the exact label **Synthesized example from shared
+feedback**. No catalog output is released when it copies an actual source passage.
+All verbatim quotations are forbidden; no raw excerpt is a failure fallback.
+
+Item grounding is separate from joint-context safety. A trusted server-side
+`context_provider.load(project=..., week=...)` supplies `JointContext`: a complete
+inventory of required co-accessible/current/prior scopes, their passages and
+roster sizes, and ephemeral pairwise roster intersection counts. This interface
+cannot accept model-generated safety flags. Scope completeness must be determined
+from actual audience/access and release history by the caller, never a client or
+model assertion. Current passages must exactly match all actual source narrative
+fields. Every complete passage across the inventory must belong to the finite
+generic grammar in `SAFE_PASSAGES`; identifying names, roles, dates, incidents,
+cross-project clues and unknown prose fail closed. Nonempty contexts with fewer
+than five eligible members also fail. Small known overlaps do not alone prohibit
+generic statements, but they never excuse rare/identifying context. Missing
+scopes/intersection facts or a changed inventory after the provider call withhold
+the result. Inventory counts carry no contributor IDs or identity-to-source joins.
+Only synthetic complete-inventory fixtures are supplied here; absent production
+coverage withholds. This conservative stage does not establish report/audience
+authorization or replace the final joint release gate in #31/#32/#33.
+
+`EvidenceAssessment.evidence` is optional `ReleasedEvidence`. Its
+`artifact_for_analysis()` returns a defensive canonical envelope containing only
+accepted items. `source_context_for_analysis()` returns defensive
+`EvidenceSourceContext(issues, references, joint_context)` bound to the accepted
+source snapshot and inspected context. The registry contains `evidence` references
+only for accepted IDs, with original scoped expiry. #30 can use the canonical
+artifact alongside issues/trends while retaining raw sources locally to verify
+its own rationale; this is not a serialized new schema or reusable publication
+permission. Downstream decisions must check current expiry/context again.
+`public_items()` exposes only `form`, `text` and the required synthesis `label`;
+source IDs, issue IDs, counts, provenance and identities remain internal. A mixed
+valid/unsafe response retains only independently safe items. Missing/expired
+inputs, adapter failure and wholly unsafe results return uniform `unavailable`.
+
+Run `uv run pytest signal_loop/analysis/tests/test_evidence.py` for real #28/#18
+synthetic handoff, exact release text/labels, four/five/six item support, actual
+source contradiction, identifying and overlapping context, context changes,
+defensive snapshots, invalid output, injection and safe partial withholding.
