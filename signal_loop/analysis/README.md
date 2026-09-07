@@ -12,9 +12,9 @@ project-local source IDs, carries the minimum source expiry and verified interna
 count, and makes defensive copies for analysis. Its representation hides content.
 It is an in-process type, **not** an invented `aggregate/1.0` schema: #6 does not
 define aggregate data fields. A persisted aggregate needs an explicitly reviewed
-contract. #18 continues to use its existing `analysis-request/1.0` inputs; #33
-must build and validate that request and scoped reference registry from these
-canonical artifacts. #18 accepts at most 100 artifacts per request; larger input
+contract. #18 continues to use its existing `analysis-request/1.0` inputs; the
+theme stage builds its request and scoped registry from these canonical
+artifacts. #33 owns orchestration. #18 accepts at most 100 artifacts per request; larger input
 sets need bounded pipeline batching without combining or inventing distinct
 support. This service does not make that provider call. Never serialize this
 result directly to a renderer.
@@ -70,3 +70,80 @@ Fixtures cover threshold minus/at/plus one, sparse and small rosters, repeated
 answers/follow-ups/aliases, overlapping identifying narratives, unknown evidence,
 scope and personal-field rejection, expiry, safe suppression and real database
 isolation. They use no external service or production data.
+
+## Restricted theme extraction (#26)
+
+`themes.extract_themes(eligible, closes_at=..., at=..., adapter=..., grounding=None)`
+accepts the trusted in-process `RestrictedAnalysisInput` from this module. JSON,
+raw lists, unknown types, invalid envelopes, duplicate sources, expired input,
+less than five nonempty contributors and requests above #18's 100-source bound
+fail before provider work. This is an internal Python boundary, not an
+unforgeable capability: callers must obtain eligibility from #25, never construct
+it from client input. The stage derives its reference registry from the actual
+supplied sources; the provider cannot supply or enlarge it.
+
+Only `Adapter.structured_analysis` makes provider calls. Success is a
+`RestrictedThemes` containing exact `themes/1.0` (defensive access through
+`artifact_for_analysis()`); adapter/validation failures are content-free
+`ExtractionFailure` values. `Suppressed` passes through unchanged without a
+provider call. Explicit trusted empty input returns a validated envelope with
+`data={"items": []}` and no source refs or provider work. #25 currently suppresses
+zero submissions, so this empty branch is a defensive internal handoff rather
+than permission to bypass eligibility. A provider can also return zero items.
+No empty result is an available report.
+
+Output categories remain exactly `delivery`, `workload`, `collaboration`, `wins`,
+`support`. Recurring concerns retain their subject category; this stage cannot
+invent a historical comparison or emit `recurring_concern` as a theme category.
+It produces candidates for #28, not `issues/1.0` severity objects. Every referenced
+source must support the whole statement. After grounding, its support count must
+match the #25-proven one-person-per-source invariant; a provider's count never
+establishes that invariant. Candidates with fewer than five actual supporters
+remain restricted. Output lifetime cannot exceed the earliest input expiry.
+
+The built-in `ConservativeGrounding` is usable without another model: it checks
+structured delivery/workload statements against exact enums and whole-field
+extracts against the entire note or follow-up answer. It does not accept a
+substring, keyword overlap, removed negation/context, unknown/declined enum as
+evidence, or an invented paraphrase. Free-text category checking uses bounded
+complete-sentence grammars for ordinary delivery, workload, collaboration, wins
+and support statements; these classify an already exact source extract rather
+than infer a stronger claim. For example, `Reviews are waiting in the queue.`
+can be a delivery candidate; `Reviews are not waiting in the queue.` cannot
+support it. `Review queues keep delaying delivery.` preserves the source's
+recurring concern without inventing prior-week evidence.
+
+This conservative verifier deliberately rejects many legitimate paraphrases
+and unfamiliar categorized sentences. A full exact extract can remain
+uncategorized, as permitted by #6. A server-injected `GroundingVerifier` can
+extend semantic coverage, but must independently inspect actual source content,
+check every factual clause and category, preserve negation/context, and return
+an exact claim/category/source-set-bound `Grounding` result. Missing, partial,
+foreign, malformed or exceptional evidence fails closed. An AI boolean, caller
+count or source-ID-only lookup is not a production verifier. #33 owns selecting
+and documenting any such extension; #39 still owns any vendor and verified
+production processing. None is silently selected here.
+
+`THEME_INSTRUCTIONS` is the fixed trusted prompt contract for #39's eventual
+provider wrapper to select for `analysis-request/1.0 -> themes/1.0`; it is not an
+extra request field or concatenated feedback instruction. #18's exact request
+envelope remains unchanged. Synthetic fake providers return explicit fixtures
+and do not perform prompting. The runtime checks are independent of whether a
+provider follows instructions: injected JSON, foreign refs, changed schemas and
+unsupported claims reject. Source text remains data and is never executed.
+
+Extractive theme text is restricted intermediate material, **not a public
+quote**. There is no public projection or render endpoint in this stage. Its
+representation hides content and ordinary JSON serialization is unavailable;
+never use `dataclasses.asdict` or private fields in a renderer. #29 must produce
+grounded privacy-safe paraphrases/evidence; #31/#32 independently gate audience
+projections and discard all source refs/provenance/counts. #33 must recheck raw
+expiry and withdrawal downstream. No persistence, publication or live AI is added.
+
+`uv run pytest signal_loop/analysis/tests/test_themes.py` exercises the actual
+built-in grounding validator using synthetic complete sources and #18's fake
+provider, including all five categories/recurring concerns, negation, unsupported
+clauses, malformed output, unknown refs, injected instructions, provider failures,
+one-support restricted candidates, suppressed and empty input, and defensive
+output. Full tests require a separately named disposable PostgreSQL test database
+when running alongside other engineers/QA; do not reuse their test DB.
