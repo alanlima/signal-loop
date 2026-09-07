@@ -1,0 +1,6 @@
+Your weekly check-in is open.
+
+Sign in to review your available check-in:
+{{ entry_url }}
+
+This invitation does not indicate whether you have submitted feedback.
