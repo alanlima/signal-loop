@@ -147,3 +147,28 @@ clauses, malformed output, unknown refs, injected instructions, provider failure
 one-support restricted candidates, suppressed and empty input, and defensive
 output. Full tests require a separately named disposable PostgreSQL test database
 when running alongside other engineers/QA; do not reuse their test DB.
+
+## Restricted two-week trends (#27)
+
+`trends.compare_weeks(previous=..., current=..., at=..., reviewer=...)` implements
+the deterministic, numeric, versioned [trend rules](../../_docs/trend-rules.md).
+Supply two `WeeklyHistory` objects containing the original frozen #25/#26
+snapshots and a trusted independent `HistoryReviewer`; no production history
+reviewer is selected by default. The reviewer must attest the exact snapshot
+contents, original releases, unchanged membership, safe participation and joint
+inference safety without respondent joins. #33 owns wiring this fixture handoff.
+
+`RestrictedTrends.artifact_for_analysis()` returns the defensive `trends/1.0`
+candidate. `TrendUnavailable.reason` is restricted; its public status, like an
+unreleased success, is always `{"status": "unavailable"}`. No endpoint or
+publication is added. Unknown topic labels remain unmatched; the documented
+finite alias registry is the entire matching vocabulary for this version.
+Sentiment describes only positive project-win feedback, not inferred personal
+mood. Workload/blocker/collaboration statements remain topic-specific. Numeric
+prevalences/counts stay restricted; downstream audience gates still apply.
+
+Run `uv run pytest signal_loop/analysis/tests/test_trends.py` for deterministic
+fixture checks: inclusive directional boundaries, stable and recurring concerns,
+renames, gaps, thresholds, partial withholding, source grounding, original-history
+review binding, privacy failures, expiry and public-status redaction. No database,
+provider call or fixture identity mapping is needed by this pure service.
