@@ -1,5 +1,84 @@
 # Reporting ownership and manager composition
 
+## Independent team summary (#32)
+
+`team.compose_team(TeamInput(eligible, themes, recommendations=None, history=None),
+project=..., week=..., version=..., closes_at=..., at=..., context_provider=...,
+commitment_provider=None)` owns the separate `TeamSummary` candidate and team
+release. It accepts actual restricted #25/#26 wrappers directly: a manager report,
+scored issue or recommendation is not needed for team eligibility. Its independent
+gate checks current scope/expiry, five distinct contributors and five actually
+grounded supporters for every selected theme. Unknown or unsupported themes fail
+closed. An explicit empty theme set or missing input/context suppresses. Neither
+failure stores a partial canonical artifact or public summary.
+
+The bounded team wording catalog covers the #29 concern categories plus the
+shared milestone win and shared backlog support need. It produces independently
+supported paraphrases, never raw participant quotations. Major themes, wins,
+blockers and shared concerns occupy the exact canonical themes array; no invented
+schema fields or sentiment/morale inference are introduced. Trends are optional:
+the explicit `SeverityHistory` handoff is recomputed through #27 against the actual
+two weeks and its bound independent history reviewer. Missing history means an
+explicit empty trends array; supplied unsafe history withholds the whole summary.
+
+Optional #30 recommendations select only literal `suggest_for_team=True` actions.
+Each selected action is independently matched to its grounded theme and at least
+five actual supporters. Process suggestions are normative options, not assertions
+that participants already proposed them. Private recommendations, rationale,
+severity and scoring explanations are never copied. Empty focus and commitments
+are explicit arrays. The gate never constructs team JSON by redacting manager JSON.
+
+`TeamPublicationContext(joint_context, manager_recommendations, manager_context)`
+comes from a trusted complete server inventory. Both manager fields explicitly
+`None` mean known absence, not an inferred default. A present manager supplies the
+actual #30 wrapper and `PublicationContext` snapshot, which #31's pure gate
+independently recomputes; the actual current source set and joint inventory must
+match. The team gate separately reviews the complete source/context inventory and
+its own finite safe clauses. Under the shared project/week transaction lock, any
+existing manager release must equal that exact reviewed manager content and be
+ready/unexpired. Missing, withdrawn, expired or changed counterpart evidence
+withholds team release; its expiry also bounds team retention. The context is
+reloaded before persistence and elapsed review/lock time consumes source lifetime.
+No production inventory provider or pipeline wiring is implemented here.
+
+The optional #36 fixture boundary is `commitment_provider.published_for(project,
+week)` returning a tuple of `PublishedCommitment(project, week, text, published_at,
+expires_at)`. This server-owned interface represents records **already published**
+through the commitment workflow, not model `approved` flags or draft records. The
+team gate checks scope, publication time, expiry and a grounded safe process-action
+catalog; it reloads the same records before writing. Unknown wording fails closed.
+The fixture boundary creates no approval or commitment record. Canonical approved
+flags are derived only after those checks; public commitments are plain safe text.
+#36 remains responsible for the real authorized publication selector. A previously
+released manager still uses #31's empty-commitment counterpart boundary; new joint
+manager composition with commitments remains fail-closed until its verified handoff.
+
+`TeamSummary` stores the exact restricted `team-summary/1.0` envelope keyed by
+project/week/analysis version/schema/privacy policy, including only scoped theme
+and trend references plus its own processing provenance. It never stores raw
+feedback, issue references or manager-only fields. Candidate expiry is bounded by
+the earliest supporting artifact. The separate `AudienceRelease` stores only exact
+team `audience-release/1.0` content, without restricted references or provenance.
+Candidate and release writes roll back together. Same-version retries reuse the
+decision; the first project/week/team release is immutable across versions and
+concurrent attempts. Withdrawal seals its slot. Safe release retention follows
+#31's original-closure/history limits and cannot outlive a supporting commitment
+or existing counterpart. #38 owns physical deletion.
+
+`selectors.team_summary_for` enforces #9 team authorization before querying any
+release and returns only the exact team envelope. Unauthorized, failed, suppressed,
+withdrawn and expired summaries share the content-free unavailable response;
+not-yet-available depends only on the public closing schedule. This issue adds no
+UI, model provider calls, production publication job or later backlog wiring.
+
+Focused team tests use real isolated PostgreSQL for atomicity, rollback, concurrent
+versions, immutable releases, symmetric manager checks, expiry and selectors.
+Pure fixtures cover all required theme types and focus together, actual grounding,
+history recalculation, private sentinels, invalid/unsafe input and the already
+published commitment boundary. Run `uv run --env-file .env.engineer2 pytest
+--postgres signal_loop/reporting/tests/test_team.py` with the isolated engineer
+environment (or the corresponding local QA environment).
+
 `services.compose_manager(recommendations, project=..., week=..., version=...,
 closes_at=..., at=..., context_provider=...)` accepts the implemented #30
 `RestrictedRecommendations` handoff. The service snapshots its complete lineage,
