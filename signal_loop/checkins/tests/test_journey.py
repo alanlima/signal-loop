@@ -187,6 +187,52 @@ class JourneyTests(TestCase):
         self.assertIn(f"{self.projects[0].pk}:J3", draft.seen_slots)
         self.assertEqual(Journey.objects.get().started_at, started)
 
+    def test_unseen_project_post_at_600_is_rejected_and_cannot_enter_preview_at_601(self):
+        self.begin()
+        start = Journey.objects.get().started_at
+        self.assertNotIn(f"{self.projects[1].pk}:J1", PersonalDraft.objects.get().seen_slots)
+        with patch("signal_loop.checkins.views.timezone.now", return_value=start + timedelta(seconds=600)):
+            response = self.post(1, action="project_save", J3="forged unseen Cedar")
+            self.assertEqual(response.status_code, 404)
+            self.assertFalse(ProjectDraft.objects.filter(project_id=self.projects[1].pk).exists())
+            response = self.post(0, J3="visible Birch answer")
+            self.assertContains(response, "visible Birch answer")
+        fake = Mock(return_value="preview_complete")
+        with override_settings(CHECKIN_FINAL_SUBMISSION=fake), patch(
+            "signal_loop.checkins.views.timezone.now", return_value=start + timedelta(seconds=601)
+        ):
+            response = self.action("preview_submit")
+            fake.assert_not_called()
+            self.assertContains(response, "Review incomplete")
+            response = self.action("finish_project", section=self.projects[1].pk,
+                                   J1="on_track", J2="manageable", J3="still unseen")
+            self.assertEqual(response.status_code, 404)
+            self.action("finish_omit", section=self.projects[1].pk, confirm="yes")
+            response = self.action("preview_submit")
+            self.assertContains(response, "Practice finish complete")
+        self.assertEqual([row["project"] for row in fake.call_args.args[0]], [self.projects[0].pk])
+
+    def test_stale_unseen_row_cannot_complete_progress_or_bypass_final_validation(self):
+        self.begin()
+        start = Journey.objects.get().started_at
+        ProjectDraft.objects.create(draft=PersonalDraft.objects.get(), project_id=self.projects[1].pk,
+                                    answers={"J1": "on_track", "J2": "manageable", "J3": "stale hidden row"})
+        fake = Mock(return_value="preview_complete")
+        with override_settings(CHECKIN_FINAL_SUBMISSION=fake), patch(
+            "signal_loop.checkins.views.timezone.now", return_value=start + timedelta(seconds=601)
+        ):
+            self.post(0, J3="visible only")
+            response = self.action("preview_submit")
+        fake.assert_not_called()
+        self.assertNotContains(response, "13 of 13 question slots complete")
+        self.assertNotContains(response, "stale hidden row")
+        self.assertContains(response, "This section was not seen")
+
+    def test_unseen_project_cannot_be_prepopulated_before_deadline_either(self):
+        self.begin()
+        self.assertEqual(self.post(1, action="project_save").status_code, 404)
+        self.assertFalse(ProjectDraft.objects.exists())
+
 
 class DurableAllocationTests(TransactionTestCase):
     def test_atomic_reservation_and_permanent_claim_survive_store_reconstruction(self):

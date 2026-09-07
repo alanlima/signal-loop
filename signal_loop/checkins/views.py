@@ -180,6 +180,8 @@ def _personal_check_in(request):
                 draft.stage = "personal"
                 draft.save(update_fields=["stage"])
             else:
+                if any(key not in draft.seen_slots for key in PersonalForm.base_fields):
+                    return HttpResponse("Not found.", status=404, content_type="text/plain")
                 raw = {key: request.POST.get(key, "") for key in PersonalForm.base_fields}
                 form = PersonalForm(raw)
                 if request.POST.get("revision") != str(draft.revision):

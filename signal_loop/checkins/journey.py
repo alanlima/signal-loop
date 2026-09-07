@@ -69,18 +69,18 @@ def progress(draft, journey):
     stopped = expired_clock(journey)
     resolved = 0
     for key in PersonalForm.base_fields:
-        if (stopped and key not in draft.seen_slots) or _valid_field(PersonalForm, draft.answers, key):
+        if (stopped and key not in draft.seen_slots) or (key in draft.seen_slots and _valid_field(PersonalForm, draft.answers, key)):
             resolved += 1
     answers = {row.project_id: row.answers for row in ProjectDraft.objects.filter(draft=draft)}
     for pid, _ in journey.selected_scopes:
         for key in ProjectForm.base_fields:
-            if pid in draft.omitted_projects or _valid_field(ProjectForm, answers.get(pid, {}), key, project_name="project"):
+            if pid in draft.omitted_projects or (f"{pid}:{key}" in draft.seen_slots and _valid_field(ProjectForm, answers.get(pid, {}), key, project_name="project")):
                 resolved += 1
     if draft.adaptive_allocated:
         resolved += 2 - len(draft.adaptive_slots)
         for row in draft.adaptive_slots:
             key = adaptive_key(row)
-            if row["state"] in {"no_question", "unavailable"} or int(row["slot"]["project"]) in draft.omitted_projects or (row["state"] == "shown" and key in draft.adaptive_answers and draft.adaptive_answers[key].get("resolved", False) and AdaptiveForm(
+            if row["state"] in {"no_question", "unavailable"} or int(row["slot"]["project"]) in draft.omitted_projects or (row["state"] == "shown" and key in draft.seen_slots and key in draft.adaptive_answers and draft.adaptive_answers[key].get("resolved", False) and AdaptiveForm(
                     {"answer": draft.adaptive_answers[key]["answer"]}, label=_label(row)).is_valid()):
                 resolved += 1
     return resolved, 5 + 3 * len(journey.selected_scopes) + 2
@@ -243,6 +243,8 @@ def _save_journey_action(request, journey, draft_id, action, context):
             context["finish_adaptive_form"] = (key, form)
             draft.stage = "finish"
         elif action == "finish_personal":
+            if any(key in request.POST and key not in draft.seen_slots for key in PersonalForm.base_fields):
+                return HttpResponse("Not found.", status=404)
             raw = {key: request.POST.get(key, "") for key in PersonalForm.base_fields if key in draft.seen_slots}
             form = _seen_form(PersonalForm(raw), raw)
             valid = form.is_valid()
@@ -266,7 +268,7 @@ def _save_journey_action(request, journey, draft_id, action, context):
                     context["journey_message"] = "This project is no longer available. Confirm removal to continue."
                 else:
                     keys = [key for key in ProjectForm.base_fields if f"{pid}:{key}" in draft.seen_slots]
-                    if not keys:
+                    if not keys or any(key in request.POST and key not in keys for key in ProjectForm.base_fields):
                         return HttpResponse("Not found.", status=404)
                     raw = {key: request.POST.get(key, "") for key in keys}
                     form = _seen_form(ProjectForm(raw, project_name=projects[pid].name, auto_id=f"id_{pid}_%s"), keys)
@@ -362,13 +364,22 @@ def _submission_sections(draft, journey, user):
         if (pid, wid) not in allowed:
             raise ValueError()
         answers = dict(saved.get(pid, {}))
+        # Revalidate the authoritative offer record independently of save handlers.
+        # This also denies stale/forged rows written before the seen-field guard.
+        if (not set(answers) <= set(ProjectForm.base_fields)
+                or any(f"{pid}:{key}" not in draft.seen_slots for key in {"J1", "J2"} | set(answers))):
+            raise ValueError()
         if not ProjectForm(answers, project_name=projects[pid].name).is_valid():
             raise ValueError()
         for row in draft.adaptive_slots:
             key = adaptive_key(row)
-            if row["slot"]["project"] != str(pid) or row["state"] != "shown" or key not in draft.seen_slots:
+            if row["slot"]["project"] != str(pid) or row["state"] != "shown":
                 continue
             value = draft.adaptive_answers.get(key)
+            if key not in draft.seen_slots:
+                if value is not None:
+                    raise ValueError()
+                continue
             if value is None or not value.get("resolved", False) or not AdaptiveForm({"answer": value["answer"]}, label=_label(row)).is_valid():
                 raise ValueError()
             if not _eligible_followup(row, answers):

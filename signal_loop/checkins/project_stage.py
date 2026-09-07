@@ -31,6 +31,10 @@ def project_stage(request, *, journey, draft, candidates):
         if set(request.POST) - allowed or any(len(request.POST.getlist(key)) != 1 for key in request.POST):
             return HttpResponse("Not found.", status=404, content_type="text/plain")
     project_id, window_id = scopes[position]
+    if action in {"project_next", "project_back", "project_save"} and any(
+        f"{project_id}:{key}" not in draft.seen_slots for key in ProjectForm.base_fields
+    ):
+        return HttpResponse("Not found.", status=404, content_type="text/plain")
     project = projects[project_id]
     # Recheck snapshot/current activity after acquiring the outer principal lock.
     eligible = {(row.project_id, row.window_id) for org in Organisation.objects.filter(
