@@ -134,6 +134,7 @@ INSTALLED_APPS = [
     "signal_loop.admission",
     "signal_loop.feedback",
     "signal_loop.checkins",
+    "signal_loop.invitations",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -200,3 +201,17 @@ CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {"global_keyprefix": "signal-loop-loca
 CELERY_REDIS_SOCKET_CONNECT_TIMEOUT = 3
 CELERY_REDIS_SOCKET_TIMEOUT = 3
 CELERY_TASK_PUBLISH_RETRY = False
+
+# Default local-only delivery; selecting SMTP requires explicit deployment setup.
+EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "25"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "false").lower() == "true"
+EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "false").lower() == "true"
+EMAIL_TIMEOUT = 10
+EMAIL_FILE_PATH = os.environ.get("EMAIL_FILE_PATH", ".local-email")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "SignalLoop <noreply@example.com>")
+INVITATION_ORIGIN = os.environ.get("INVITATION_ORIGIN", "http://127.0.0.1:8000")
+INVITATION_CONTACT_PROVIDER = None  # Mandatory trusted server injection; no email/account fallback.

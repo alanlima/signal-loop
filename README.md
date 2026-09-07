@@ -7,6 +7,8 @@ returns HTTP 200 with an empty body, so a blank browser page is expected.
 
 For background execution and the real Linux/Redis smoke check, see the
 [local Celery worker guide](signal_loop/pipeline/README.md).
+Opening invitation setup and synthetic email review are documented in the
+[invitation guide](signal_loop/invitations/README.md).
 
 Prerequisites: Python 3.12+, uv, and Docker with Compose v2.20+ (or v5).
 On Windows, start Docker Desktop with Linux containers. Run these commands
