@@ -78,4 +78,3 @@ uv run --env-file .env.issue1 pytest --postgres
 
 No new dependency or live provider is used. #20 must supply the durable store
 before integrating this service into the check-in route.
-
