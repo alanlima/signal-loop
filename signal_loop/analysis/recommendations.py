@@ -119,11 +119,13 @@ def suggest_recommendations(assessment, evidence, *, closes_at, at, adapter, con
     """
     started = time.monotonic()
     try:
-        require(type(assessment) is SeverityAssessment and assessment.failure is None)
-        require(assessment.rule_version == RULE_VERSION and assessment.issues is not None)
+        require(type(assessment) is SeverityAssessment)
         require(type(evidence) is ReleasedEvidence and isinstance(adapter, Adapter))
+        # Bind issues, calculations and evidence once, before validation or calls.
+        # Caller-owned mutable internals must never rebind the returned lineage.
+        assessment, evidence = deepcopy((assessment, evidence))
+        require(assessment.failure is None and assessment.rule_version == RULE_VERSION and assessment.issues is not None)
         require(isinstance(at, datetime) and at.utcoffset() is not None)
-        evidence = deepcopy(evidence)
         evidence_context = evidence.source_context_for_analysis()
         require(type(evidence_context) is EvidenceSourceContext and evidence_context.issues == assessment.issues)
         issue_context = evidence_context.issues.source_context_for_analysis()

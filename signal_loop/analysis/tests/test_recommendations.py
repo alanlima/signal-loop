@@ -223,3 +223,21 @@ def test_partial_safe_candidates_have_only_scoped_references_and_defensive_proje
     context.references.clear()
     assert result.recommendations.artifact_for_analysis()["data"]["items"]
     assert result.recommendations.source_context_for_analysis().references
+
+
+def test_caller_mutation_during_real_adapter_call_cannot_rebind_validated_handoff():
+    assessment, evidence, context, output = bundle()
+    expected_issues = deepcopy(assessment.issues)
+    expected_calculations = deepcopy(assessment.calculations)
+    class ChangingAdapter(Adapter):
+        def structured_analysis(self, request, *, scope):
+            result = super().structured_analysis(request, scope=scope)
+            assessment.issues._source_context.eligible._artifacts[0]["data"]["workload"] = "manageable"
+            return result
+    result = run(assessment, evidence, context, output, adapter=ChangingAdapter(FakeProvider(response=output)))
+    assert assessment.issues.source_context_for_analysis().eligible.feedback_for_analysis()[0]["data"]["workload"] == "manageable"
+    assert result.recommendations is not None
+    handoff = result.recommendations.source_context_for_analysis()
+    assert handoff.issues == handoff.evidence.source_context_for_analysis().issues == expected_issues
+    assert handoff.calculations == expected_calculations
+    assert handoff.issues.source_context_for_analysis().eligible.feedback_for_analysis()[0]["data"]["workload"] == "overloaded"
