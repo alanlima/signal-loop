@@ -153,6 +153,39 @@ class InvitationTests(TestCase):
 
 
 class ConcurrentInvitationTests(TransactionTestCase):
+    def test_revocation_during_contact_lookup_prevents_claim_for_all_aliases(self):
+        _, _, window = setup_fixture()
+        lookup_started, revoked = Event(), Event()
+        deliveries = []
+
+        def delayed_contact(identifier, organisation):
+            if identifier == P1:
+                lookup_started.set()
+                assert revoked.wait(10)
+            return contact(identifier, organisation)
+
+        def revoke_aliases():
+            close_old_connections()
+            try:
+                assert lookup_started.wait(10)
+                for membership in OrganisationMembership.objects.filter(user__username__in=["rowan", "rowan_alias"]):
+                    membership.is_active = False
+                    membership.save()
+                revoked.set()
+            finally:
+                close_old_connections()
+
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(revoke_aliases)
+            result = send_window_invitations(window_id=window.pk, principal_provider=principal,
+                                            contact_provider=delayed_contact, transport=deliveries.append,
+                                            clock=lambda: AT)
+            future.result(timeout=10)
+        self.assertEqual(deliveries, ["avery.primary@example.com"])
+        self.assertEqual(result["sent"], 1)
+        self.assertEqual(InvitationDelivery.objects.get(principal=P1).state, "withheld")
+        self.assertEqual(InvitationDelivery.objects.get(principal=P1).attempts, 0)
+
     def test_concurrent_dispatch_cannot_send_twice_while_first_transport_inflight(self):
         _, _, window = setup_fixture()
         entered, release = Event(), Event()

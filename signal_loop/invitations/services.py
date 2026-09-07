@@ -4,6 +4,7 @@ from urllib.parse import urlsplit
 from uuid import UUID
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
 from django.core.validators import validate_email
@@ -14,6 +15,7 @@ from django.utils import timezone
 from django.utils.module_loading import import_string
 
 from signal_loop.admission.services import VerifiedPrincipal
+from signal_loop.membership.models import Organisation, OrganisationMembership, Project, ProjectMembership
 from signal_loop.windows.models import EligibilitySnapshot, WeeklyWindow
 
 from .models import InvitationDelivery
@@ -74,6 +76,20 @@ def _address(principal, organisation, provider):
         return None
 
 
+def _lock_snapshot_context(window):
+    """Match admission's account/membership/project lock order before revalidation."""
+    memberships = list(EligibilitySnapshot.objects.filter(window=window).values_list("membership_id", flat=True))
+    assignments = list(ProjectMembership.objects.filter(pk__in=memberships).values(
+        "organisation_membership_id", "organisation_membership__user_id", "project_id"))
+    list(get_user_model().objects.select_for_update().filter(
+        pk__in=[row["organisation_membership__user_id"] for row in assignments]).order_by("pk"))
+    list(OrganisationMembership.objects.select_for_update().filter(
+        pk__in=[row["organisation_membership_id"] for row in assignments]).order_by("pk"))
+    list(Project.objects.select_for_update().filter(
+        pk__in=[row["project_id"] for row in assignments]).order_by("pk"))
+    list(ProjectMembership.objects.select_for_update().filter(pk__in=memberships).order_by("pk"))
+
+
 def entry_url():
     origin = getattr(settings, "INVITATION_ORIGIN", "http://127.0.0.1:8000")
     parsed = urlsplit(origin)
@@ -118,7 +134,11 @@ def send_window_invitations(*, window_id, principal_provider=None, contact_provi
         return {**counts, "code": "configuration_or_window_unavailable"}
     for principal in sorted(principals, key=str):
         try:
+            # Directory work precedes the authorization lock/claim. Revocations
+            # committed while it runs must be visible to the fresh check below.
+            address = _address(principal, window.organisation, contact_provider)
             with transaction.atomic():
+                Organisation.objects.select_for_update().get(pk=window.organisation_id)
                 locked = WeeklyWindow.objects.select_for_update(of=("self",)).select_related("organisation").get(pk=window_id)
                 at = clock()
                 if not locked.opens_at <= at < locked.closes_at:
@@ -134,10 +154,10 @@ def send_window_invitations(*, window_id, principal_provider=None, contact_provi
                 if row.state in {row.State.SENT, row.State.SENDING, row.State.AMBIGUOUS}:
                     counts["ambiguous" if row.state == row.State.AMBIGUOUS else "skipped"] += 1
                     continue
+                _lock_snapshot_context(locked)
                 current, _ = _principals(locked, principal_provider)
-                address = _address(principal, locked.organisation, contact_provider) if principal in current else None
                 at = clock()
-                if address is None or not locked.opens_at <= at < locked.closes_at:
+                if address is None or principal not in current or not locked.opens_at <= at < locked.closes_at:
                     row.state = row.State.WITHHELD
                     row.save(update_fields=["state"])
                     counts["withheld"] += 1

@@ -23,7 +23,12 @@ provisioning/primary-contact evidence before production sending.
 
 Only captured memberships in the target window qualify, with live user,
 organisation membership, project membership, project and organisation activity
-rechecked before each committed claim. At least one eligible alias is sufficient;
+rechecked before each committed claim. Primary contact resolution happens before
+the claim transaction. The transaction locks organisation, window, captured users,
+organisation memberships, projects and project memberships in admission-compatible
+order, then freshly resolves live eligibility before SENDING. A revocation committed
+during directory lookup therefore wins; supported later model updates serialize
+after the claim. At least one eligible alias is sufficient;
 late joins and other organisations cannot add recipients. No feedback/participation
 status is queried, and invitations never identify respondents/nonrespondents.
 The message contains only a neutral authenticated `/app/check-in/` link. No user,
