@@ -136,6 +136,7 @@ INSTALLED_APPS = [
     "signal_loop.checkins",
     "signal_loop.invitations",
     "signal_loop.pipeline",
+    "signal_loop.reporting",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
