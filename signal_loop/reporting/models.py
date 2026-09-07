@@ -50,6 +50,21 @@ class ManagerReport(OwnedModel):
             fields=["project", "week", "analysis_version", "schema", "privacy_policy"], name="manager_candidate_key")]
 
 
+class TeamSummary(OwnedModel):
+    project = models.CharField(max_length=64)
+    week = models.DateField()
+    analysis_version = models.CharField(max_length=64)
+    schema = models.CharField(max_length=40, default="team-summary/1.0")
+    privacy_policy = models.CharField(max_length=20, default="1.0")
+    state = models.CharField(max_length=16)
+    artifact = models.JSONField(null=True, blank=True)
+    expires_at = models.DateTimeField()
+
+    class Meta(OwnedModel.Meta):
+        constraints = [models.UniqueConstraint(
+            fields=["project", "week", "analysis_version", "schema", "privacy_policy"], name="team_candidate_key")]
+
+
 class AudienceRelease(OwnedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.CharField(max_length=64)
