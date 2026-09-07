@@ -1,0 +1,10 @@
+FROM python:3.12-slim-bookworm
+WORKDIR /app
+RUN pip install --no-cache-dir uv==0.10.9
+COPY pyproject.toml uv.lock ./
+RUN uv sync --locked --no-dev
+COPY signal_loop ./signal_loop
+RUN useradd --uid 10001 --create-home worker
+USER worker
+ENV DJANGO_SETTINGS_MODULE=signal_loop.settings_worker
+CMD ["/app/.venv/bin/celery", "-A", "signal_loop", "worker", "--pool=prefork", "--concurrency=1", "--loglevel=INFO", "--without-gossip", "--without-mingle", "--without-heartbeat"]
