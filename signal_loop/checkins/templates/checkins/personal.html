@@ -19,7 +19,12 @@
 </form>
 {% else %}
 {% if draft.expires_at %}<p class="eyebrow">Draft expires {{ draft.expires_at|date:"Y-m-d H:i:s" }} UTC</p>{% else %}<p>Expiry could not be checked. Keep this page open and retry.</p>{% endif %}
-{% if stage == 'projects' or stage == 'project_review' %}
+{% if question_total %}<p role="status">{{ question_done }} of {{ question_total }} question slots complete</p><p data-journey-deadline="{{ journey_deadline|date:'c' }}">New questions end at {{ journey_deadline|date:"H:i:s" }} UTC. <span data-journey-remaining></span></p>{% endif %}
+{% if stage == 'finish' %}
+{% include 'checkins/finish.html' %}
+{% elif stage == 'adaptive' %}
+{% include 'checkins/adaptive.html' %}
+{% elif stage == 'projects' or stage == 'project_review' %}
 {% include 'checkins/project.html' %}
 {% else %}
 <h2>Personal reflection</h2>
@@ -34,10 +39,11 @@
     <label for="{{ field.id_for_label }}">{{ field.label }} <span class="field-kind">({% if field.field.required %}Required{% else %}Optional{% endif %})</span></label>
     {{ field }}
     {% if field.help_text %}<p class="help-text" id="{{ field.auto_id }}_helptext">{{ field.help_text }} <span data-count-for="{{ field.id_for_label }}" aria-live="polite"></span></p>{% endif %}
-    {% if field.errors %}<div id="{{ field.auto_id }}_error" role="alert">{{ field.errors }}</div>{% endif %}
+    {% if field.errors %}<div role="alert">{{ field.errors }}</div>{% endif %}
   </div>{% endfor %}
   <div class="form-actions"><button name="action" value="next">Next</button><button class="secondary" name="action" value="save">Save and stay</button></div>
 </form>
 {% endif %}
+{% if stage != 'finish' %}<form method="post" hx-post="{% url 'current_check_in' %}" hx-target="#application-shell" hx-swap="outerHTML">{% csrf_token %}<input type="hidden" name="revision" value="{{ draft.revision }}"><button name="action" value="review" class="secondary">Review saved answers</button></form>{% endif %}
 <form method="post" class="discard-form">{% csrf_token %}<label class="check-choice"><input type="checkbox" name="confirm" value="yes"> Delete my draft and end this week's journey</label><button class="secondary" name="action" value="discard">Discard draft</button></form>
 {% endif %}

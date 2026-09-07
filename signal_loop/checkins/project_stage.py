@@ -67,8 +67,10 @@ def project_stage(request, *, journey, draft, candidates):
         elif action in {"project_next", "project_back", "project_save"} and available:
             form = ProjectForm({key: request.POST.get(key, "") for key in ProjectForm.base_fields}, project_name=project.name)
             valid = form.is_valid()
-            ProjectDraft.objects.update_or_create(draft=draft, project_id=project_id,
-                defaults={"answers": form.cleaned_data if valid else {key: request.POST.get(key, "") for key in ProjectForm.base_fields}})
+            saved_answers = form.cleaned_data if valid else {key: request.POST.get(key, "") for key in ProjectForm.base_fields}
+            if action == "project_back" and not saved_answers.get("J3") and (row is None or "J3" not in row.answers):
+                saved_answers.pop("J3", None)  # Back alone does not complete an unanswered optional slot.
+            ProjectDraft.objects.update_or_create(draft=draft, project_id=project_id, defaults={"answers": saved_answers})
             draft.revision += 1
             if valid and action == "project_next":
                 next_positions = [i for i in range(position + 1, len(ids)) if ids[i] not in draft.omitted_projects]

@@ -24,6 +24,7 @@ from signal_loop.windows.models import WeeklyWindow
 from .forms import PersonalForm, ProjectForm
 from .models import PersonalDraft
 from .project_stage import project_stage
+from .journey import AdaptiveForm, handle_journey
 
 
 @dataclass(frozen=True)
@@ -66,12 +67,27 @@ def _state(user, at, provider):
 
 @login_required
 @require_http_methods(["GET", "POST"])
-@sensitive_post_parameters("P1", "P2", "P3", "P4", "P5", "J1", "J2", "J3")
+@sensitive_post_parameters("P1", "P2", "P3", "P4", "P5", "J1", "J2", "J3", "answer")
 def personal_check_in(request):
     try:
         return _personal_check_in(request)
     except Exception:
         # Keep entered reflection recoverable without logging exception locals/body.
+        action = request.POST.get("action", "")
+        if action.startswith(("finish_", "adaptive_")) or action == "preview_submit":
+            if action == "finish_project":
+                form = ProjectForm(request.POST, project_name="this project")
+            elif action == "finish_personal":
+                form = PersonalForm(request.POST)
+            elif "answer" in request.POST:
+                form = AdaptiveForm(request.POST, label="Saved project follow-up")
+            else:
+                form = None
+            response = render(request, "checkins/journey_retry.html", {"retry_form": form,
+                "retry_action": action, "revision": request.POST.get("revision", "0"),
+                "section": request.POST.get("section", ""), "question": request.POST.get("question", "")}, status=503)
+            response["Cache-Control"] = "private, no-store"
+            return response
         project_request = request.POST.get("action", "").startswith("project_")
         form = ProjectForm({key: request.POST.get(key, "") for key in ProjectForm.base_fields}, project_name="this project") if project_request else PersonalForm(
             {key: request.POST.get(key, "") for key in PersonalForm.base_fields})
@@ -114,7 +130,7 @@ def _personal_check_in(request):
         context["stage"] = "complete" if status == "complete" else "expired"
         return render_shell(request, "current_check_in", extra_context=context)
     action = request.POST.get("action", "") if request.method == "POST" else ""
-    if request.method == "POST" and any(key in request.POST for key in {"section", "J1", "J2", "J3"}) and not action.startswith("project_"):
+    if request.method == "POST" and any(key in request.POST for key in {"section", "J1", "J2", "J3"}) and not action.startswith(("project_", "finish_")):
         return HttpResponse("Not found.", status=404, content_type="text/plain")
     if not journey:
         context["stage"] = "select" if candidates else "empty"
@@ -195,6 +211,9 @@ def _personal_check_in(request):
         elif action.startswith("project_") or "section" in request.GET:
             return HttpResponse("Not found.", status=404, content_type="text/plain")
         context.update(stage=draft.stage, form=form, draft=draft)
+    journey_response = handle_journey(request, journey=journey, draft=draft, context=context)
+    if journey_response is not None:
+        return journey_response
     response = render_shell(request, "current_check_in", extra_context=context)
     response["Cache-Control"] = "private, no-store"
     return response

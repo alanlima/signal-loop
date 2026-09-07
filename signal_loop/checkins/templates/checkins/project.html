@@ -15,7 +15,7 @@
   <input type="hidden" name="section" value="{{ current_project.pk }}"><input type="hidden" name="revision" value="{{ draft.revision }}">
   {% for field in project_form %}<div class="form-field"><label for="{{ field.id_for_label }}">{{ field.label }} <span class="field-kind">({% if field.field.required %}Required{% else %}Optional{% endif %})</span></label>
     {{ field }}{% if field.help_text %}<p class="help-text" id="{{ field.auto_id }}_helptext">{{ field.help_text }} <span data-count-for="{{ field.id_for_label }}" aria-live="polite"></span></p>{% endif %}
-    {% if field.errors %}<div id="{{ field.auto_id }}_error" role="alert">{{ field.errors }}</div>{% endif %}</div>{% endfor %}
+    {% if field.errors %}<div role="alert">{{ field.errors }}</div>{% endif %}</div>{% endfor %}
   <div class="form-actions"><button name="action" value="project_next">Next project</button><button name="action" value="project_back" class="secondary">Back</button><button name="action" value="project_save" class="secondary">Save and stay</button></div>
 </form>
 {% endif %}

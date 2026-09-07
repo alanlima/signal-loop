@@ -1,5 +1,8 @@
 # Private check-in drafts (#16 and #17)
 
+The integrated #20 clock, progress, adaptive steps, finish view and expanded
+synthetic browser fixtures are documented in [JOURNEY.md](JOURNEY.md).
+
 The current check-in shell route now offers the exact P1-P5 form from
 [_docs/check-in-policy.md](../../_docs/check-in-policy.md). Personal answers stay
 only in `PersonalDraft`, linked to the identity-side global journey. They are never
@@ -31,7 +34,8 @@ follow the database transaction. Storage/progression errors show fixed retry tex
 and keep entered answers without exposing exception details. The fake progression
 callback takes **no arguments**, so it cannot receive P1-P5 or accidentally become
 a feedback submission. Next advances to the frozen project sections. #19/#20/#21
-own adaptive questions, timer and submission integration. No final feedback is
+originally owned adaptive questions, timer and submission integration; #20 now
+connects the private journey through a clearly labelled practice finish. No final feedback is
 written or credential consumed by these forms.
 
 Project sections use exactly J1/J2/J3 and the #5 choices and 320-code-point J3

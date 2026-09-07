@@ -1,0 +1,6 @@
+<h2>Optional project follow-up</h2><p>You can skip this question. Skipping does not create another question.</p>
+<form method="post" class="personal-form" novalidate hx-post="{% url 'current_check_in' %}" hx-target="#application-shell" hx-swap="outerHTML">{% csrf_token %}
+<input type="hidden" name="revision" value="{{ draft.revision }}"><input type="hidden" name="question" value="{{ adaptive_key }}">
+{% include 'checkins/fields.html' with fields_form=adaptive_form %}
+<div class="form-actions"><button name="action" value="adaptive_next">Next</button><button name="action" value="adaptive_skip" class="secondary">Skip follow-up</button><button name="action" value="adaptive_back" class="secondary">Back to saved answers</button></div>
+</form>

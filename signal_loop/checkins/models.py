@@ -10,6 +10,10 @@ class PersonalDraft(models.Model):
     expires_at = models.DateTimeField()
     project_position = models.PositiveSmallIntegerField(default=0)
     omitted_projects = models.JSONField(default=list)
+    seen_slots = models.JSONField(default=list)
+    adaptive_allocated = models.BooleanField(default=False)
+    adaptive_slots = models.JSONField(default=list)
+    adaptive_answers = models.JSONField(default=dict)
 
     class Meta:
         default_permissions = ()

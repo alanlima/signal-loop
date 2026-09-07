@@ -30,3 +30,17 @@ class Command(BaseCommand):
             if not WeeklyWindow.objects.filter(organisation=org, week_start=week).exists():
                 create_weekly_window(organisation=org, week_start=week, timezone_name=zone)
         self.stdout.write("Synthetic review ready: synthetic_personal_review / synthetic-review-password")
+        for label, count in (("ordinary", 1), ("many", 4), ("zero", 0)):
+            name = f"synthetic_journey_{label}"
+            fixture, _ = get_user_model().objects.get_or_create(username=name)
+            fixture.set_password("synthetic-review-password")
+            fixture.save()
+            org, _ = Organisation.objects.get_or_create(name=f"Synthetic journey {label}")
+            member, _ = OrganisationMembership.objects.get_or_create(organisation=org, user=fixture)
+            for index in range(max(1, count)):
+                project, _ = Project.objects.get_or_create(organisation=org, name=f"{label.title()} project {index + 1}")
+                ProjectMembership.objects.get_or_create(project=project, organisation_membership=member)
+            week = timezone.now().date() - timedelta(days=timezone.now().weekday())
+            if count and not WeeklyWindow.objects.filter(organisation=org, week_start=week).exists():
+                create_weekly_window(organisation=org, week_start=week, timezone_name="UTC")
+            self.stdout.write(f"Synthetic journey ready: {name} / synthetic-review-password")
