@@ -5,7 +5,7 @@
 {% elif stage == 'expired' %}
 <div class="empty-state"><h2>This draft is no longer available</h2><p>It was discarded or expired. Its reflection cannot be recovered. You can start a new journey next Monday at 00:00 UTC, if projects are available.</p></div>
 {% elif stage == 'complete' %}
-<div class="empty-state"><h2>This week's check-in is complete</h2><p>No new answers have been submitted.</p></div>
+<div class="empty-state"><h2>This week's check-in is complete</h2><p>Your check-in is complete.</p></div>
 {% elif stage == 'select' %}
 <h2>Choose your projects</h2><p>One combined journey this UTC week, with up to three projects across your organisations.</p>
 {% if message %}<p role="alert">{{ message }}</p>{% endif %}

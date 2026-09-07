@@ -74,7 +74,7 @@ class ProjectFormTests(TestCase):
         self.assertContains(response, "Project 1 of 1")
         response = self.post()
         self.assertContains(response, "Finish and review saved answers")
-        self.assertContains(response, "real submission is not connected yet")
+        self.assertContains(response, "Submit check-in")
         self.assertFalse(FeedbackSection.objects.exists())
         self.assertFalse(Participation.objects.filter(consumed=True).exists())
 

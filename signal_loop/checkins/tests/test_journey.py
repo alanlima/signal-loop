@@ -22,9 +22,14 @@ pytestmark = pytest.mark.usefixtures("postgres_database")
 
 class JourneyTests(TestCase):
     setUpTestData = classmethod(test_projects.ProjectFormTests.setUpTestData.__func__)
-    setUp = test_projects.ProjectFormTests.setUp
     begin = test_projects.ProjectFormTests.begin
     post = test_projects.ProjectFormTests.post
+
+    def setUp(self):
+        test_projects.ProjectFormTests.setUp(self)
+        preview = override_settings(CHECKIN_FINAL_SUBMISSION="signal_loop.submission.services.preview_submission")
+        preview.enable()
+        self.addCleanup(preview.disable)
 
     def action(self, action, **values):
         return self.client.post("/app/check-in/", {"action": action,

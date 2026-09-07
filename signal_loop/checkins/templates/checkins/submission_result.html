@@ -1,0 +1,7 @@
+{% extends 'accounts/base.html' %}
+{% block content %}<main id="main-content" class="login" tabindex="-1">
+<h1>{% if completed %}Check-in complete{% else %}Check-in status{% endif %}</h1>
+<p role="status">{{ result_message }}</p>
+{% if retryable %}<form method="post" action="{% url 'submit_check_in' %}">{% csrf_token %}<input type="hidden" name="week" value="{{ week }}"><input type="hidden" name="revision" value="{{ revision }}"><button>Retry submission</button></form>{% endif %}
+<p><a href="{% if completed %}{% url 'application_entry' %}{% else %}{% url 'current_check_in' %}{% endif %}">{% if completed %}Return to overview{% else %}Return to saved answers{% endif %}</a></p>
+</main>{% endblock %}
