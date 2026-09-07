@@ -1,0 +1,5 @@
+{% extends 'accounts/base.html' %}
+{% block content %}<main id="main-content" tabindex="-1"><h1>Check-in draft</h1><p role="alert">We could not save or load the draft. Keep this page open and try again. Your entered answers are shown below.</p>
+<form method="post" class="personal-form" novalidate>{% csrf_token %}<input type="hidden" name="revision" value="{{ revision }}">
+{% if section %}<input type="hidden" name="section" value="{{ section }}">{% endif %}{% if question %}<input type="hidden" name="question" value="{{ question }}">{% endif %}
+{% if retry_form %}{% include 'checkins/fields.html' with fields_form=retry_form %}{% endif %}<button name="action" value="{{ retry_action }}">Retry save</button></form></main>{% endblock %}

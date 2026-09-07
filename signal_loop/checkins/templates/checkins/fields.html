@@ -1,0 +1,4 @@
+{% if fields_form.errors %}<div role="alert"><p>Review the errors below. Your entered answers are preserved.</p>{{ fields_form.non_field_errors }}</div>{% endif %}
+{% for field in fields_form %}<div class="form-field"><label for="{{ field.id_for_label }}">{{ field.label }} <span class="field-kind">({% if field.field.required %}Required{% else %}Optional{% endif %})</span></label>
+{{ field }}{% if field.help_text %}<p class="help-text" id="{{ field.auto_id }}_helptext">{{ field.help_text }} <span data-count-for="{{ field.id_for_label }}" aria-live="polite"></span></p>{% endif %}
+{% if field.errors %}<div role="alert">{{ field.errors }}</div>{% endif %}</div>{% endfor %}

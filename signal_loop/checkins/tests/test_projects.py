@@ -73,8 +73,8 @@ class ProjectFormTests(TestCase):
         self.assertNotContains(response, 'name="F2"')
         self.assertContains(response, "Project 1 of 1")
         response = self.post()
-        self.assertContains(response, "Project sections saved")
-        self.assertContains(response, "Final review and submission are not available yet")
+        self.assertContains(response, "Finish and review saved answers")
+        self.assertContains(response, "real submission is not connected yet")
         self.assertFalse(FeedbackSection.objects.exists())
         self.assertFalse(Participation.objects.filter(consumed=True).exists())
 
@@ -133,7 +133,7 @@ class ProjectFormTests(TestCase):
         self.assertContains(response, "Confirm removal")
         self.assertEqual(ProjectDraft.objects.count(), 2)
         response = self.post(1, action="project_omit", confirm="yes")
-        self.assertContains(response, "Project sections saved")
+        self.assertContains(response, "Finish and review saved answers")
         self.assertEqual(ProjectDraft.objects.count(), 1)
         self.assertEqual(ProjectDraft.objects.get().answers["J3"], "preserve Birch")
         self.assertEqual(len(Journey.objects.get().selected_scopes), 2)  # no replacement or scope rewrite
@@ -160,7 +160,7 @@ class ProjectFormTests(TestCase):
         response = self.post(1)
         self.assertContains(response, "This project is no longer available")
         self.assertContains(response, "Project 1 of 2")
-        self.assertNotContains(response, "Project sections saved")
+        self.assertNotContains(response, "Finish and review saved answers")
 
     def test_empty_window_state_and_maximum_three_offer_no_extra_projects(self):
         response = self.client.get("/app/check-in/")
@@ -190,7 +190,7 @@ class ProjectFormTests(TestCase):
         response = self.post(1)
         self.assertContains(response, "Complete or explicitly remove this section")
         self.assertContains(response, "Project 1 of 2")
-        self.assertNotContains(response, "Project sections saved")
+        self.assertNotContains(response, "Finish and review saved answers")
 
     def test_project_storage_failure_preserves_typed_project_answer(self):
         self.begin()

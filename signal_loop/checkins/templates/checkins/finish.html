@@ -1,0 +1,22 @@
+<h2>Finish and review saved answers</h2>
+{% if timed_out %}<p role="status">The ten-minute question time has ended. No new questions will appear. You can edit questions already seen, remove incomplete sections, save, or finish before draft expiry.</p>{% endif %}
+<p>Your personal reflection stays private in this draft. No feedback has been submitted.</p>
+{% if not timed_out %}<form method="post">{% csrf_token %}<input type="hidden" name="revision" value="{{ draft.revision }}"><button name="action" value="resume_questions" class="secondary">Back to questions</button></form>{% endif %}
+{% if journey_message %}<p role="alert">{{ journey_message }}</p>{% endif %}
+{% if no_retained_projects %}<p>No project feedback to submit. All selected sections were removed. You can discard this draft.</p>{% endif %}
+{% if finish_personal.fields %}<h3>Personal reflection: saved questions</h3>
+<form method="post" class="personal-form" novalidate>{% csrf_token %}<input type="hidden" name="revision" value="{{ draft.revision }}">
+{% include 'checkins/fields.html' with fields_form=finish_personal %}<button name="action" value="finish_personal">Save personal answers</button></form>{% endif %}
+{% for section in finish_sections %}<section aria-label="{{ section.project.name }} saved answers"><h3>{{ section.project.name }}</h3>
+{% if not section.available %}<p>This project is no longer available. Confirm removal to continue; other answers are preserved.</p>
+{% elif section.unseen %}<p>This section was not seen. It cannot introduce new questions here. Confirm removal to continue.</p>
+{% else %}<form method="post" class="personal-form" novalidate>{% csrf_token %}<input type="hidden" name="revision" value="{{ draft.revision }}"><input type="hidden" name="section" value="{{ section.project.pk }}">
+{% include 'checkins/fields.html' with fields_form=section.form %}<button name="action" value="finish_project">Save {{ section.project.name }} answers</button></form>{% endif %}
+<form method="post" class="discard-form">{% csrf_token %}<input type="hidden" name="revision" value="{{ draft.revision }}"><input type="hidden" name="section" value="{{ section.project.pk }}">
+<label class="check-choice"><input type="checkbox" name="confirm" value="yes"> Discard {{ section.project.name }} answers without a replacement</label><button name="action" value="finish_omit" class="secondary">Remove section</button></form></section>{% endfor %}
+{% for followup in finish_followups %}<form method="post" class="personal-form" novalidate>{% csrf_token %}<input type="hidden" name="revision" value="{{ draft.revision }}"><input type="hidden" name="question" value="{{ followup.key }}">
+{% include 'checkins/fields.html' with fields_form=followup.form %}
+{% if followup.excluded %}<p>This follow-up is excluded because the project answers changed. Its text remains editable but cannot enter feedback.</p><label class="check-choice"><input type="checkbox" name="acknowledge" value="yes"{% if followup.acknowledged %} checked{% endif %}> I acknowledge this answer is excluded</label>{% endif %}
+<div class="form-actions"><button name="action" value="finish_adaptive">Save follow-up</button><button name="action" value="finish_skip" class="secondary">Skip follow-up</button></div></form>{% endfor %}
+<form method="post">{% csrf_token %}<input type="hidden" name="revision" value="{{ draft.revision }}"><button name="action" value="preview_submit">Finish practice check-in</button></form>
+<p>This is the local final-submission preview. It stores no feedback and consumes no admission credentials; real submission is not connected yet.</p>
