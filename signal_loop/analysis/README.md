@@ -268,3 +268,80 @@ Run `uv run pytest signal_loop/analysis/tests/test_evidence.py` for real #28/#18
 synthetic handoff, exact release text/labels, four/five/six item support, actual
 source contradiction, identifying and overlapping context, context changes,
 defensive snapshots, invalid output, injection and safe partial withholding.
+
+## Grounded process recommendations (#30)
+
+`recommendations.suggest_recommendations(assessment, evidence, closes_at=...,
+at=..., adapter=..., context_provider=...)` takes #28's `SeverityAssessment` and
+#29's `ReleasedEvidence`. Exact scored issues, factor metadata, trends and safe
+evidence are validated against their same-scope source association. #18 receives
+only canonical issues/trends/evidence in its unchanged `analysis-request/1.0`;
+raw feedback remains local for independent grounding, not provider input. Factor
+metadata is checked locally; it is not an invented #6/#18 schema field.
+
+The `recommendations/1.0` candidate must include an explicit boolean
+`suggest_for_team` on every row, even though #6 makes it optional generically.
+The flag means a suggested option for #32/#36, never manager approval or automatic
+publication. The fixed `RECOMMENDATION_INSTRUCTIONS` prompt contract belongs in
+#39's eventual provider wrapper; no vendor or extra request field is introduced.
+Fakes return explicit candidates; runtime gates do not trust prompt obedience.
+
+The version-1 conservative action catalog contains practical process options:
+
+| Supported topic | Suggested action |
+| --- | --- |
+| Workload overload | Review team capacity and reduce concurrent work. |
+| Stretched workload | Review priorities and rebalance planned work. |
+| Delivery risk | Review delivery dependencies and agree a recovery plan. |
+| Delivery blocked | Review delivery blockers and agree the next unblocking step. |
+| Review turnaround delay | Publish a shared review rota. |
+| Handoff coordination | Agree a shared handoff checklist and coordination cadence. |
+
+These are normative options related to the issue; sources need not have already
+proposed the exact action. A recognized action for a different topic is rejected.
+No employee evaluation, promotion, accusation, individual targeting or unrelated
+task can pass the complete-action grammar. Unknown actions are withheld, not
+loosely accepted through keyword matching. This finite catalog is deliberately
+conservative, not a claim of general semantic action evaluation.
+
+Every factual rationale must equal an accepted #29 paraphrase, or equal
+`Synthesized example from shared feedback (hypothetical): ` followed by its
+approved conditional synthesis. Labels and uncertainty cannot be removed to turn
+an example into an asserted event. Each cited recommendation supporter must be
+among that evidence item's independently grounded sources, with at least five.
+The stage rechecks actual structured/source facts and #29's no-source-excerpt
+invariant; provider `grounded` flags, issue severity and manager-suggestion flags
+are not proof. Arbitrary causes, urgency, identities or extra clauses fail closed.
+
+Joint privacy review is separate from grounding. The trusted context provider
+must supply the exact complete #29-bound inventory of current/prior/co-access
+scopes, complete passages, roster sizes and ephemeral intersection counts. Unknown
+or identifying text, missing scope/pair data and invalid counts withhold before
+provider work. The stage's grammar additionally recognizes the generic process
+actions/labeled rationales above. The inventory is loaded again after the call;
+any change requires a new decision. No participant identities or durable joins
+are added. Source lifetime is rechecked using the trusted invocation time plus
+real elapsed execution duration, so a late provider result cannot outlive support.
+
+`RecommendationAssessment.recommendations` is optional `RestrictedRecommendations`.
+`artifact_for_analysis()` returns the defensive exact canonical artifact, including
+the restricted team flag. `source_context_for_analysis()` returns
+`RecommendationSourceContext(issues, evidence, calculations, references,
+joint_context)` bound to accepted content. Only accepted recommendation IDs get
+scoped `Reference(kind="recommendations", ...)` records. Unsafe candidate IDs and
+text are omitted, with no fallback. #31 must independently recheck every displayed
+clause, dependencies, current expiry/context and combined audience safety.
+
+`public_items()` contains only **action/rationale**, matching #6's permitted
+manager recommendation fields. `suggest_for_team` stays in the internal artifact
+for #32 selection; it is never an extra manager-display field. This projection is
+not a publication operation: `public_status()` remains `unavailable`, even after
+successful generation. No report storage, task execution, UI or email is added.
+
+Empty/withheld/expired inputs, missing context and wholly unsafe output produce no
+recommendation. Valid safe items can survive alongside unrelated rejected items;
+malformed contracts and provider failures fail closed. Run
+`uv run pytest signal_loop/analysis/tests/test_recommendations.py` for real #28/#29
+handoffs with fake #18 calls, practical new actions, flags, synthesis, unsupported
+or employee-directed text, context changes, deadline crossing, empty/no-call
+behavior, provider failures and the defensive #31 canonical-reference handoff.
