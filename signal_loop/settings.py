@@ -135,6 +135,7 @@ INSTALLED_APPS = [
     "signal_loop.feedback",
     "signal_loop.checkins",
     "signal_loop.invitations",
+    "signal_loop.pipeline",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -196,7 +197,7 @@ CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_REJECT_ON_WORKER_LOST = False
 CELERY_BROKER_CONNECTION_TIMEOUT = 3
 CELERY_BROKER_CONNECTION_MAX_RETRIES = 2
-CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 60, "socket_connect_timeout": 3, "socket_timeout": 3}
+CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 120, "socket_connect_timeout": 3, "socket_timeout": 3}
 CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {"global_keyprefix": "signal-loop-local-", "retry_policy": {"timeout": 3}}
 CELERY_REDIS_SOCKET_CONNECT_TIMEOUT = 3
 CELERY_REDIS_SOCKET_TIMEOUT = 3
@@ -215,3 +216,8 @@ EMAIL_FILE_PATH = os.environ.get("EMAIL_FILE_PATH", ".local-email")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "SignalLoop <noreply@example.com>")
 INVITATION_ORIGIN = os.environ.get("INVITATION_ORIGIN", "http://127.0.0.1:8000")
 INVITATION_CONTACT_PROVIDER = None  # Mandatory trusted server injection; no email/account fallback.
+
+CELERY_BEAT_SCHEDULE = {
+    "local-weekly-dispatch": {"task": "signal_loop.dispatch_due", "schedule": 60.0,
+                              "args": ["40000000-0000-4000-8000-000000000001"]},
+}

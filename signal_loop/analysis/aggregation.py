@@ -127,3 +127,24 @@ def aggregate_stored(*, project_id, week, at, verifier=None, threshold=5):
                          at=at, verifier=verifier, threshold=threshold)
     except Exception:
         return Suppressed()
+
+
+def freeze_source_references(*, project_id, week):
+    """Restricted #24 selector; caller holds the #21 window lock through commit."""
+    from signal_loop.feedback.models import FeedbackSection
+    return tuple(str(value) for value in FeedbackSection.objects.filter(
+        project_id=project_id, week=week,
+    ).order_by("id").values_list("id", flat=True))
+
+
+def source_reference_expiry(*, project_id, week, references, empty_expiry):
+    """Resolve one frozen scope; missing/withdrawn references fail closed."""
+    from signal_loop.feedback.models import FeedbackSection
+    try:
+        rows = list(FeedbackSection.objects.filter(project_id=project_id, week=week,
+                                                  pk__in=references).values_list("id", "expires_at"))
+        if {str(row[0]) for row in rows} != set(references):
+            return None
+        return min([empty_expiry, *(row[1] for row in rows)])
+    except Exception:
+        return None

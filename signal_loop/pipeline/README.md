@@ -1,5 +1,8 @@
 # Local Celery worker
 
+For weekly windows, durable outbox recovery and beat commands, see
+[periodic scheduling](SCHEDULING.md).
+
 Celery 5.6.3 and its compatible Redis client are locked in `uv.lock`. Django
 settings configure JSON-only messages, Redis broker/results and the explicit
 `signal-loop-local` queue. The harmless tasks do no business writes or external
@@ -57,17 +60,17 @@ docker compose @workerCompose stop worker
 docker compose @workerCompose stop postgres redis
 ```
 
-`stop worker` leaves services/data intact; its 15-second graceful stop exceeds the
-8-second hard execution limit. Start again with `up -d worker`. Do not use broad
+`stop worker` leaves services/data intact; its 100-second graceful stop exceeds the
+90-second maximum scheduled-job limit. Start again with `up -d worker`. Do not use broad
 Redis flushes or delete PostgreSQL volumes to retry a task.
 
 ## Bounds, failures and retry contract
 
-Each task gets 5 seconds soft / 8 seconds hard, two retries maximum with 1 then 2
+Smoke defaults are 5 seconds soft / 8 seconds hard, two retries maximum with 1 then 2
 second backoff for **RetryableFailure only**. Timeouts and unknown/permanent errors
 do not retry. The smoke retry fixture fails transiently once. A soft timeout is
 reported as `timeout`; hard worker loss becomes `worker_failed`, without automatic
-worker-loss requeue loops. Redis visibility timeout is 60 seconds, larger than an
+worker-loss requeue loops. Redis visibility timeout is 120 seconds, larger than an
 attempt; late acknowledgment still means delivery can duplicate. There is no
 exactly-once broker guarantee. See [Redis delivery caveats](https://docs.celeryq.dev/en/stable/getting-started/backends-and-brokers/redis.html).
 

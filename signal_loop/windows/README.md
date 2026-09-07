@@ -31,8 +31,11 @@ materialized window can become eligible immediately. Scheduled creation is #24.
 All supported window creation paths (`objects.create`, instance `save`, and the
 service) atomically capture active project memberships of active accounts,
 organisation memberships, projects and organisation. Capture happens once when
-the window is materialized; the opening scheduler must materialize at opening,
-not pre-create future snapshots. Tests explicitly materialize synthetic dates.
+the window is materialized; the scheduler targets opening and never pre-creates
+future snapshots. User-approved #24 downtime rule: capture current membership
+late only if the current missing window is still open, recording that fact.
+Never reconstruct an already-closed missing window or its historical roster.
+Tests explicitly materialize synthetic dates.
 Do not rebuild snapshots on lookup, membership edits, retries or scheduler runs.
 Frozen roles are historical facts; membership/project associations are immutable
 in the membership module. Project names are live display labels.

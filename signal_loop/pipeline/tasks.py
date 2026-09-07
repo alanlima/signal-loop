@@ -92,3 +92,18 @@ def smoke_timeout(job):
 
 
 TASKS = {"complete": smoke, "retry": smoke_retry, "failure": smoke_failure, "timeout": smoke_timeout}
+
+
+@shared_task(base=SafeTask, name="signal_loop.dispatch_due", soft_time_limit=30, time_limit=40)
+def dispatch_due_task(reference):
+    from .scheduling import dispatch_due
+    result = dispatch_due()
+    if result["planning"]["failed"] or result["outbox"]["failed"]:
+        raise RetryableFailure()
+
+
+@shared_task(base=SafeTask, name="signal_loop.scheduled_job", soft_time_limit=60, time_limit=90)
+def scheduled_job(reference):
+    from .scheduling import run_job
+    if run_job(reference) in {"pending", "retry_pending"}:
+        raise RetryableFailure()
